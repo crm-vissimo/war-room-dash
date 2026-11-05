@@ -54,7 +54,7 @@ GRANT SELECT ON dora_red_aggregations.vw_ev_dim_product_bundle TO <usuário>;
 - **Ontem e Mês até ontem:** pedidos pagos (`is_paid = 1`), receita = `price_to_pay + item_shipping_amount`.
 - **Hoje:** boleto condition — pedidos solid (`is_solid = 1`, pagos ou não), sem SAC, televendas (cupom `TV*`), ItaúShop (pedido `BRI*`) e Vivino; receita, frete e CM2 de boleto a 65% e PIX a 75%. PMV sem o fator.
 - **Pedidos e ticket médio:** pedidos distintos da tabela de pedidos com o mesmo recorte da receita (igual ao Looker); o canal de cada pedido vem do último clique, e pedido sem clique entra em Orgânico/Outros. Ticket = receita (produto + frete) ÷ pedidos.
-- **Atingimento de Hoje:** a cada 15 minutos, até o fim do último bloco de 15 minutos fechado; o planejado segue a curva média dos mesmos dias da semana nas 6 semanas anteriores.
+- **Atingimento de Hoje:** até o minuto do pedido mais recente já carregado no Redshift (a tabela de pedidos chega com uns 20 a 35 minutos de atraso); no bloco de 15 minutos em andamento, o planejado entra na proporção dos minutos já passados. O planejado segue a curva média dos mesmos dias da semana nas 6 semanas anteriores.
 - **Receita last click por canal, metas e investimento:** planilha Monitoramento de Canais.
 - **Plano por faixa:** arquivo "M-1 Plano de Vendas" do mês (aba Acompanhamento Categorias). Os IDs aceitos ficam em `SHEET_PLANOS` e no mapa `PLANO` de `public/index.html` — acrescente o de cada mês novo nos dois.
 

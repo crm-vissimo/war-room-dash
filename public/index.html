@@ -247,7 +247,7 @@ td .tp.vid { background: var(--ev-orange); }
 
     <div class="c-hoje card" id="hora">
       <h3>Receita acumulada a cada 15 minutos</h3>
-      <p class="cap">Real de hoje (boleto condition: boleto a 65% e PIX a 75%) contra o planejado (tracejado): meta last click do dia distribuída pela curva média a cada 15 minutos dos mesmos dias da semana nas 6 semanas anteriores. O atingimento vai até o fim do último bloco de 15 minutos fechado.</p>
+      <p class="cap">Real de hoje (boleto condition: boleto a 65% e PIX a 75%) contra o planejado (tracejado): meta last click do dia distribuída pela curva média a cada 15 minutos dos mesmos dias da semana nas 6 semanas anteriores. O atingimento vai até o minuto do pedido mais recente já carregado, com o planejado proporcional no bloco de 15 minutos em andamento.</p>
       <div class="hora-wrap">
         <div class="atg-box" data-fetchpriority="high">
           <span class="lb">Atingimento até <span data-draw="kv" data-source="hora_resumo" data-row="0" data-field="ate" data-fmt="txt">—</span></span>
@@ -857,14 +857,14 @@ dash.draw('ch_hora', (el) => {
   WR.styleAxis(ga); ga.select('.domain').remove();
   const gx = svg.append('g').attr('transform', `translate(0,${h - 24})`).call(d3.axisBottom(x).ticks(Math.min(12, Math.floor(w / 60))).tickFormat((v) => v + 'h'));
   WR.styleAxis(gx);
-  const line = (k) => d3.line().defined((r) => r[k] != null).x((r) => x(r.hora)).y((r) => y(r[k]));
-  svg.append('path').datum(rows).attr('d', line('plano_acum')).attr('fill', 'none').attr('stroke', '#751614').attr('stroke-width', 2).attr('stroke-dasharray', '5 4');
-  svg.append('path').datum(rows).attr('d', line('real_acum')).attr('fill', 'none').attr('stroke', '#f9182d').attr('stroke-width', 2.5).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+  const line = (k, xk) => d3.line().defined((r) => r[k] != null).x((r) => x(r[xk])).y((r) => y(r[k]));
+  svg.append('path').datum(rows).attr('d', line('plano_acum', 'hora')).attr('fill', 'none').attr('stroke', '#751614').attr('stroke-width', 2).attr('stroke-dasharray', '5 4');
+  svg.append('path').datum(rows).attr('d', line('real_acum', 'hora_real')).attr('fill', 'none').attr('stroke', '#f9182d').attr('stroke-width', 2.5).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
   const lastR = rows.filter((r) => r.real_acum != null).pop();
   const lastP = rows.filter((r) => r.plano_acum != null).pop();
-  const lab = (r, k, txt, color, dy) => { if (r && r[k] != null) svg.append('text').attr('x', x(r.hora) + 6).attr('y', y(r[k]) + dy).text(txt + ' ' + WR.F.brl(r[k])).attr('fill', color).style('font-size', '12px').style('font-weight', 600); };
+  const lab = (r, k, txt, color, dy) => { if (r && r[k] != null) svg.append('text').attr('x', x(k === 'real_acum' ? r.hora_real : r.hora) + 6).attr('y', y(r[k]) + dy).text(txt + ' ' + WR.F.brl(r[k])).attr('fill', color).style('font-size', '12px').style('font-weight', 600); };
   lab(lastP, 'plano_acum', 'plano', '#751614', 4);
-  if (lastR && (!lastP || x(lastP.hora) - x(lastR.hora) > 110 || Math.abs(y(lastR.real_acum) - y(lastP.plano_acum)) > 14)) lab(lastR, 'real_acum', 'real', '#f9182d', -6);
+  if (lastR && (!lastP || x(lastP.hora) - x(lastR.hora_real) > 110 || Math.abs(y(lastR.real_acum) - y(lastP.plano_acum)) > 14)) lab(lastR, 'real_acum', 'real', '#f9182d', -6);
   const dot = svg.append('circle').attr('r', 4).attr('fill', '#f9182d').style('display', 'none');
   svg.append('rect').attr('x', ml).attr('y', 0).attr('width', w - 96 - ml).attr('height', h - 24).attr('fill', 'transparent')
     .on('mousemove', (ev) => {
@@ -875,10 +875,10 @@ dash.draw('ch_hora', (el) => {
       tip.style('display', null).html('');
       tip.append('div').attr('class', 'd').text('Até ' + r.ate);
       tip.append('div').text('Real acumulado: ' + WR.F.brl(r.real_acum));
-      tip.append('div').text('Planejado acumulado: ' + WR.F.brl(r.plano_acum));
+      tip.append('div').text('Planejado acumulado: ' + WR.F.brl(r.plano_ate != null ? r.plano_ate : r.plano_acum));
       tip.append('div').text('Atingimento: ' + WR.F.atg(r.ating_acum));
-      tip.append('div').text('Nesses 15 min: ' + WR.F.brl(r.real_bloco) + ' de ' + WR.F.brl(r.plano_bloco));
-      if (r.real_acum != null) dot.style('display', null).attr('cx', x(r.hora)).attr('cy', y(r.real_acum)); else dot.style('display', 'none');
+      tip.append('div').text((r.plano_ate != null && r.hora_real !== r.hora ? 'Nesse bloco até agora: ' : 'Nesses 15 min: ') + WR.F.brl(r.real_bloco) + ' de ' + WR.F.brl(r.plano_bloco));
+      if (r.real_acum != null) dot.style('display', null).attr('cx', x(r.hora_real)).attr('cy', y(r.real_acum)); else dot.style('display', 'none');
       WR.placeTip(el, tip, mx * (el.clientWidth / w), my * (el.clientWidth / w));
     })
     .on('mouseleave', () => { tip.style('display', 'none'); dot.style('display', 'none'); });
