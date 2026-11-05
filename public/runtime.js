@@ -17,6 +17,7 @@
     hora_a_hora: ['hoje'],
     faixa_vendas: ['ini', 'fim', 'pago_in'],
     canal_sku: ['ini', 'fim', 'pago_in'],
+    kits_google: ['ini', 'fim', 'pago_in'],
     canais_diario: [],
     plano_cat: ['plano_id'],
     plano_diario: ['plano_id'],

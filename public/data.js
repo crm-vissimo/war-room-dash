@@ -596,14 +596,42 @@ dash.calc('google_canais', {
   },
 });
 
-dash.calc('google_camp', {
-  title: 'Pedidos por campanha do Google',
-  description: 'Pedidos last click por utm_campaign nos canais do Google no período e a fatia de cada campanha no total do Google; as 20 com mais pedidos.',
-  inputs: ['google_lc'],
-  fn: (google_lc) => {
-    const T = { Shopping: 'Shopping', SEM_Branded: 'SEM Branded', SEM_NonBranded: 'SEM Non-Branded', DemandGen: 'Demand Gen', Bing: 'Bing' };
-    const tot = google_lc.reduce((s, r) => s + r.n, 0);
-    return google_lc.slice().sort((a, b) => b.n - a.n).slice(0, 20).map((r) => ({ campanha: r.utm_campaign || '(sem utm_campaign)', tipo: T[r.channel] || r.channel, pedidos: r.n, share: tot ? r.n / tot : null }));
+/* Top kits do Google: kits_google já vem somado por grupo (shopping = campanha com Pmax ou Shopping no nome;
+   outras = as demais campanhas do Google) e kit. */
+const topKitsGoogle = (kits_google, grupo) => kits_google.filter((r) => r.grupo === grupo && r.kit_garrafas)
+  .map((r) => ({ kit: r.kit, kit_nome: r.kit_nome, kits: r.garrafas / r.kit_garrafas, pmv: r.garrafas ? r.rec_raw / r.garrafas : null, receita: r.rec + r.frete }))
+  .sort((a, b) => b.kits - a.kits).slice(0, 5);
+dash.calc('kits_gshop', {
+  title: 'Top 5 kits em Google Shopping',
+  description: 'Kits vendidos (garrafas ÷ garrafas por kit), PMV (receita sem frete ÷ garrafas) e receita em pedidos com último clique no Google em campanhas com Pmax ou Shopping no nome (ou do canal Shopping sem utm_campaign); os 5 com mais kits.',
+  inputs: ['kits_google'],
+  fn: (kits_google) => topKitsGoogle(kits_google, 'shopping'),
+});
+dash.calc('kits_goutras', {
+  title: 'Top 5 kits nas outras campanhas do Google',
+  description: 'Kits vendidos (garrafas ÷ garrafas por kit), PMV (receita sem frete ÷ garrafas) e receita em pedidos com último clique nas campanhas do Google sem Pmax nem Shopping no nome; os 5 com mais kits.',
+  inputs: ['kits_google'],
+  fn: (kits_google) => topKitsGoogle(kits_google, 'outras'),
+});
+
+/* Investimento, atingimento do investimento e ROAS de Ontem e do mês: investimento real e planejado só de Growth + Outros
+   (sem CRM), da planilha de canais; YoY nas mesmas datas do ano passado. Em Ontem a receita do ROAS é a do último clique
+   ao vivo (a mesma do bloco de receita); no mês, a da planilha. */
+dash.calc('invest_resumo', {
+  title: 'Investimento e ROAS (Growth + Outros)',
+  description: 'Investimento real e planejado de Growth + Outros (sem CRM) da planilha de canais no período, atingimento do investimento (real ÷ planejado), ROAS = receita last click total ÷ esse investimento, ROAS planejado = meta de receita ÷ investimento planejado, e a variação de investimento e ROAS contra as mesmas datas do ano passado.',
+  inputs: ['canais_todos', 'canais_dia', 'vendas'],
+  fn: (canais_todos, canais_dia, vendas) => {
+    if (!canais_todos.length || !vendas.length) return [];
+    const umDia = vendas[0].ini === vendas[0].fim;
+    const g = canais_todos.filter((r) => r.nivel === 'grupo' && (r.grupo === 'Growth' || r.grupo === 'Outros'));
+    const tot = canais_todos.find((r) => r.nivel === 'total') || {};
+    const s = (k) => g.reduce((a, r) => a + (r[k] || 0), 0);
+    const inv = s('inv'), invp = s('inv_meta'), invy = s('inv_yoy');
+    const vivo = umDia ? canais_dia.find((r) => r.canal === 'Total') : null;
+    const rec = vivo ? vivo.receita : tot.rec || 0;
+    const roas = inv ? rec / inv : null, roasy = invy && tot.rec_yoy ? tot.rec_yoy / invy : null;
+    return [{ invest: inv, invest_plan: invp, ating_invest: invp ? inv / invp : null, invest_yoy: invy, var_invest_yoy: invy ? inv / invy - 1 : null, receita: rec, roas, roas_plan: invp ? (tot.rec_meta || 0) / invp : null, roas_yoy: roasy, var_roas_yoy: roas != null && roasy ? roas / roasy - 1 : null }];
   },
 });
 

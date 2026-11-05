@@ -244,10 +244,9 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="tile"><span class="lb">Garrafas vendidas</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="garrafas" data-fmt="int">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_garrafas" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">PMV (por garrafa)</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="pmv" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_pmv" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">CM2 %</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="cm2_pct" data-fmt="cm2" data-accent="cm2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_cm2_pp" data-fmt="pp">—</span> YoY</span></div>
-      <div class="tile c-ontem"><span class="lb">Investimento</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="invest" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="invest_plan" data-fmt="brl">—</span></span></div>
-      <div class="tile c-ontem"><span class="lb">ROAS last click</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s">receita LC ÷ investimento</span></div>
-      <div class="tile c-mtd"><span class="lb">Investimento</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="invest" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="invest_plan" data-fmt="brl">—</span></span></div>
-      <div class="tile c-mtd"><span class="lb">ROAS last click</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s">receita LC ÷ investimento</span></div>
+      <div class="tile c-nohoje"><span class="lb">Investimento (Growth + Outros)</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest_plan" data-fmt="brl">—</span> · <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="var_invest_yoy" data-fmt="delta">—</span> YoY</span></div>
+      <div class="tile c-nohoje"><span class="lb">Atingimento do investimento</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="ating_invest" data-fmt="atg">—</span><span class="s">investimento ÷ plano</span></div>
+      <div class="tile c-nohoje"><span class="lb">ROAS last click</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s"><span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="var_roas_yoy" data-fmt="delta">—</span> YoY · receita LC ÷ investimento</span></div>
     </div>
 
     <div class="c-hoje card" id="hora">
@@ -267,7 +266,7 @@ td .tp.vid { background: var(--ev-orange); }
 
     <div class="c-mtd card" id="diario">
       <h3>Receita last click por dia × meta</h3>
-      <p class="cap">Barras: real do mês · traço: meta do dia · linha: mesmo dia do ano passado.</p>
+      <p class="cap">Barras: real do mês, em verde quando bateu a meta do dia e em vermelho quando ficou abaixo, com o atingimento em cima · traço: meta do dia · linha: mesmo dia do ano passado.</p>
       <div class="chart" data-draw="ch_diario" data-source="diario"></div>
     </div>
 
@@ -422,12 +421,21 @@ td .tp.vid { background: var(--ev-orange); }
         <thead><tr><th tabindex="0" data-field="canal">Tipo<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita LC</th><th tabindex="0" data-field="meta" data-fmt="brl">Meta</th><th tabindex="0" data-field="ating" data-fmt="atg">Ating.</th><th tabindex="0" data-field="invest" data-fmt="brl">Invest.</th><th tabindex="0" data-field="invest_plan" data-fmt="brl">Invest. plano</th><th tabindex="0" data-field="roas" data-fmt="x">ROAS</th><th tabindex="0" data-field="var_yoy" data-fmt="delta">YoY</th></tr></thead>
         <tbody data-draw="tbl"></tbody></table></div>
     </div>
-    <div class="card" id="google-camp">
-      <h3>Pedidos last click por campanha do Google</h3>
-      <p class="cap">Campanhas (utm_campaign) com pedidos no período; o investimento por campanha não está em nenhuma fonte conectada.</p>
-      <div class="tw"><table data-source="google_camp" data-row-key="campanha,tipo">
-        <thead><tr><th tabindex="0" data-field="campanha">Campanha<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="tipo" data-fmt="txt">Tipo</th><th tabindex="0" data-field="pedidos" aria-sort="descending" data-fmt="int">Pedidos</th><th tabindex="0" data-field="share" data-fmt="pct">Share Google</th></tr></thead>
-        <tbody data-draw="tbl"></tbody></table></div>
+    <div class="grid">
+      <div class="card" id="kits-gshop">
+        <h3>Top 5 kits mais vendidos em Google Shopping</h3>
+        <p class="cap">Kits vendidos em pedidos com último clique no Google em campanhas com "Pmax" ou "Shopping" no nome (e pedidos do canal Shopping sem utm_campaign).</p>
+        <div class="tw"><table data-source="kits_gshop" data-row-key="kit">
+          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" aria-sort="descending" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" data-fmt="brl">Receita</th></tr></thead>
+          <tbody data-draw="tbl"></tbody></table></div>
+      </div>
+      <div class="card" id="kits-goutras">
+        <h3>Top 5 kits mais vendidos em Google (outras campanhas)</h3>
+        <p class="cap">Kits vendidos em pedidos com último clique nas demais campanhas do Google (SEM Branded, SEM Non-branded, Demand Gen): todas sem "Pmax" ou "Shopping" no nome.</p>
+        <div class="tw"><table data-source="kits_goutras" data-row-key="kit">
+          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" aria-sort="descending" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" data-fmt="brl">Receita</th></tr></thead>
+          <tbody data-draw="tbl"></tbody></table></div>
+      </div>
     </div>
     </div>
   </section>
@@ -1037,8 +1045,16 @@ dash.draw('ch_diario', (el) => {
   WR.styleAxis(gx);
   const bw = Math.min(32, x.bandwidth());
   const off = (x.bandwidth() - bw) / 2;
-  svg.append('g').selectAll('rect').data(rows.filter((r) => r.receita != null)).join('rect')
-    .attr('x', (r) => x(r.data) + off).attr('width', bw).attr('y', (r) => y(r.receita)).attr('height', (r) => y(0) - y(r.receita)).attr('rx', 2).attr('fill', '#f9182d');
+  /* verde quando bateu ou passou a meta do dia, vermelho quando ficou abaixo */
+  const atg = (r) => (r.receita != null && r.meta ? r.receita / r.meta : null);
+  const cor = (r) => (atg(r) != null && atg(r) >= 1 ? '#2f6f57' : '#f9182d');
+  const reais = rows.filter((r) => r.receita != null);
+  svg.append('g').selectAll('rect').data(reais).join('rect')
+    .attr('x', (r) => x(r.data) + off).attr('width', bw).attr('y', (r) => y(r.receita)).attr('height', (r) => y(0) - y(r.receita)).attr('rx', 2).attr('fill', cor);
+  /* ATG acima de cada barra (acima do traço da meta quando ele fica mais alto) */
+  if (x.bandwidth() >= 18) svg.append('g').selectAll('text').data(reais.filter((r) => atg(r) != null)).join('text')
+    .attr('x', (r) => x(r.data) + x.bandwidth() / 2).attr('y', (r) => y(Math.max(r.receita, r.meta)) - 5).attr('text-anchor', 'middle')
+    .text((r) => Math.round(atg(r) * 100) + '%').attr('fill', cor).style('font-size', x.bandwidth() >= 28 ? '11px' : '9px').style('font-weight', 700);
   svg.append('g').selectAll('line').data(rows.filter((r) => r.meta)).join('line')
     .attr('x1', (r) => x(r.data) + off - 2).attr('x2', (r) => x(r.data) + off + bw + 2).attr('y1', (r) => y(r.meta)).attr('y2', (r) => y(r.meta)).attr('stroke', '#270d0f').attr('stroke-width', 2);
   svg.append('path').datum(rows).attr('d', d3.line().defined((r) => r.receita_ly != null).x((r) => x(r.data) + x.bandwidth() / 2).y((r) => y(r.receita_ly))).attr('fill', 'none').attr('stroke', '#f4a384').attr('stroke-width', 2).attr('stroke-linejoin', 'round');
@@ -1049,6 +1065,7 @@ dash.draw('ch_diario', (el) => {
       tip.append('div').attr('class', 'd').text(r.data.slice(8, 10) + '/' + r.data.slice(5, 7));
       tip.append('div').text('Real: ' + WR.F.brl(r.receita));
       tip.append('div').text('Meta: ' + WR.F.brl(r.meta));
+      if (atg(r) != null) tip.append('div').text('Atingimento: ' + WR.F.atg(atg(r)));
       tip.append('div').text('Ano passado: ' + WR.F.brl(r.receita_ly));
       WR.placeTip(el, tip, mx * (el.clientWidth / w), my * (el.clientWidth / w));
     })
