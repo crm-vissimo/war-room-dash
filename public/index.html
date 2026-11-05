@@ -65,7 +65,13 @@
 .wr th, .wr td { padding: 6px 8px; text-align: right; white-space: nowrap; }
 .wr th:first-child, .wr td:first-child { text-align: left; }
 .wr th:first-child { position: sticky; }
+.wr .share-canais { min-height: 0; }
+.wr .lg-canais { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ev-dark); }
+.wr .lg-canais li { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+.wr .lg-canais .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
 .wr .nm { display: block; max-width: var(--namew, 15rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wr table.nm-full td:first-child { width: 100%; max-width: 0; min-width: 12rem; }
+.wr table.nm-full .nm { max-width: var(--namew, none); }
 .wr th .rz { position: absolute; right: 0; top: 0; bottom: 0; width: 8px; cursor: col-resize; border-right: 2px solid rgba(255,255,255,.35); }
 .wr th .rz:hover { border-right-color: var(--ev-salmon); }
 .wr td.t { text-align: left; white-space: normal; }
@@ -328,6 +334,12 @@ td .tp.vid { background: var(--ev-orange); }
         <tbody data-draw="tbl"></tbody>
       </table></div>
     </div>
+    <div class="card" id="share-canais">
+      <h3>Share de receita por canal</h3>
+      <p class="cap c-dia">Receita last click de cada canal ÷ receita total do dia, pelos pedidos com último clique (pedido sem clique entra em Outros).</p>
+      <p class="cap c-mtd">Receita last click de cada canal ÷ receita total do período, da planilha de canais.</p>
+      <div class="chart share-canais" data-draw="ch_share_canais" data-source="share_canais"></div>
+    </div>
   </section>
 
   <!-- ============ GROWTH ============ -->
@@ -351,27 +363,10 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="chart" data-draw="ch_cpm" data-source="meta_diario"></div>
     </div>
 
-    <div class="grid">
-      <div class="c-dia card" id="top-cac">
-        <h3>Top 5 anúncios com mais ativações</h3>
-        <p class="cap">Novos clientes = pedidos pagos de primeira compra (is_first_order = 1) com último clique no anúncio (utm_content). CAC = gasto do anúncio ÷ novos clientes.</p>
-        <div class="tw"><table data-source="fb_top_cac" data-row-key="anuncio">
-          <thead><tr><th tabindex="0" data-field="anuncio" data-fmt="ad">Anúncio<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="tipo" data-fmt="tipo">Tipo</th><th tabindex="0" data-field="gasto" data-fmt="brl">Gasto</th><th tabindex="0" data-field="novos" aria-sort="descending" data-fmt="int">Novos clientes</th><th tabindex="0" data-field="cac" data-fmt="brl2cac">CAC</th></tr></thead>
-          <tbody data-draw="tbl"></tbody></table></div>
-      </div>
-      <div class="card" id="top-cpc">
-        <h3>Top 5 anúncios com melhor CPC</h3>
-        <p class="cap">Gasto ÷ cliques no link, entre anúncios com 100 cliques ou mais.</p>
-        <div class="tw"><table data-source="fb_top_cpc" data-row-key="anuncio">
-          <thead><tr><th tabindex="0" data-field="anuncio" data-fmt="ad">Anúncio<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="tipo" data-fmt="tipo">Tipo</th><th tabindex="0" data-field="cliques" data-fmt="int">Cliques</th><th tabindex="0" data-field="ctr" data-fmt="pct2">CTR</th><th tabindex="0" data-field="cpm" data-fmt="brl2">CPM</th><th tabindex="0" data-field="cpc" aria-sort="ascending" data-fmt="brl2">CPC</th></tr></thead>
-          <tbody data-draw="tbl"></tbody></table></div>
-      </div>
-    </div>
-
     <div class="c-dia card" id="fb-campanhas">
       <h3>Melhores campanhas do Facebook · receita last click</h3>
       <p class="cap">Campanhas (utm_campaign) com mais receita nos pedidos pagos com último clique no Facebook, com o gasto da mesma campanha no Meta Ads.</p>
-      <div class="tw"><table data-source="fb_campanhas" data-row-key="campanha">
+      <div class="tw"><table class="nm-full" data-source="fb_campanhas" data-row-key="campanha">
         <thead><tr><th tabindex="0" data-field="campanha">Campanha<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="gasto" data-fmt="brl">Gasto</th><th tabindex="0" data-field="receita" data-fmt="brl" aria-sort="descending">Receita LC</th><th tabindex="0" data-field="roas" data-fmt="x">ROAS LC</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="novos" data-fmt="int">Novos clientes</th></tr></thead>
         <tbody data-draw="tbl"></tbody></table></div>
     </div>
@@ -401,7 +396,24 @@ td .tp.vid { background: var(--ev-orange); }
           <tbody data-draw="tbl"></tbody></table></div>
       </div>
     </div>
-    <p class="c-mtd note">Ativações de novos clientes, melhores campanhas, criativos × estoque e kits do catálogo cruzam pedido a pedido e ficam nas abas Hoje e Ontem.</p>
+    <div class="grid">
+      <div class="c-dia card" id="top-cac">
+        <h3>Top 5 anúncios com mais ativações</h3>
+        <p class="cap">Novos clientes = pedidos pagos de primeira compra (is_first_order = 1) com último clique no anúncio (utm_content). CAC = gasto do anúncio ÷ novos clientes.</p>
+        <div class="tw"><table data-source="fb_top_cac" data-row-key="anuncio">
+          <thead><tr><th tabindex="0" data-field="anuncio" data-fmt="ad">Anúncio<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="tipo" data-fmt="tipo">Tipo</th><th tabindex="0" data-field="gasto" data-fmt="brl">Gasto</th><th tabindex="0" data-field="novos" aria-sort="descending" data-fmt="int">Novos clientes</th><th tabindex="0" data-field="cac" data-fmt="brl2cac">CAC</th></tr></thead>
+          <tbody data-draw="tbl"></tbody></table></div>
+      </div>
+      <div class="card" id="top-cpc">
+        <h3>Top 5 anúncios com melhor CPC</h3>
+        <p class="cap">Gasto ÷ cliques no link, entre anúncios com 100 cliques ou mais.</p>
+        <div class="tw"><table data-source="fb_top_cpc" data-row-key="anuncio">
+          <thead><tr><th tabindex="0" data-field="anuncio" data-fmt="ad">Anúncio<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="tipo" data-fmt="tipo">Tipo</th><th tabindex="0" data-field="cliques" data-fmt="int">Cliques</th><th tabindex="0" data-field="ctr" data-fmt="pct2">CTR</th><th tabindex="0" data-field="cpm" data-fmt="brl2">CPM</th><th tabindex="0" data-field="cpc" aria-sort="ascending" data-fmt="brl2">CPC</th></tr></thead>
+          <tbody data-draw="tbl"></tbody></table></div>
+      </div>
+    </div>
+
+    <p class="c-mtd note">Melhores campanhas, criativos × estoque, kits do catálogo e ativações de novos clientes cruzam pedido a pedido e ficam nas abas Hoje e Ontem.</p>
     <div class="c-nohoje sub-google" id="google">
       <h3 class="sub-h">Google</h3>
     <div class="card" id="google-canais">
@@ -462,6 +474,25 @@ td .tp.vid { background: var(--ev-orange); }
         <p class="cap">Pedidos pagos cujo último clique foi um WhatsApp (utm_campaign = nome do disparo). Enviados do Insider; ROAS = receita LC ÷ (enviados × R$ 0,3991). Em Hoje, os disparos feitos hoje aparecem destacados.</p>
         <div class="tw"><table data-source="camp_whats" data-row-key="campanha" data-today-col="campanha">
           <thead><tr><th tabindex="0" data-field="campanha">Disparo de WhatsApp<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="enviados" data-fmt="int">Enviados</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita LC</th><th tabindex="0" data-field="roas" data-fmt="xw">ROAS LC</th></tr></thead>
+          <tbody data-draw="tbl"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="c-dia grid">
+      <div class="card" id="kits-email">
+        <span class="pill-crm email">Email</span>
+        <h3>Top kits do email</h3>
+        <p class="cap">Kits vendidos em pedidos com último clique em Email.</p>
+        <div class="tw"><table data-source="crm_kits_email" data-row-key="kit">
+          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita</th></tr></thead>
+          <tbody data-draw="tbl"></tbody></table></div>
+      </div>
+      <div class="card" id="kits-whats">
+        <span class="pill-crm whats">WhatsApp</span>
+        <h3>Top kits do WhatsApp</h3>
+        <p class="cap">Kits vendidos em pedidos com último clique em WhatsApp.</p>
+        <div class="tw"><table data-source="crm_kits_whats" data-row-key="kit">
+          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita</th></tr></thead>
           <tbody data-draw="tbl"></tbody></table></div>
       </div>
     </div>
@@ -944,6 +975,38 @@ dash.draw('ch_share', (el) => {
       if (bw > 34) svg.append('text').attr('x', x0 + bw / 2).attr('y', y + 24).attr('text-anchor', 'middle').text(WR.F.pct0(sh)).attr('fill', TXT[r.faixa] || '#fff').style('font-size', '13px').style('font-weight', 700).style('pointer-events', 'none');
       x0 += bw;
     });
+  });
+});
+dash.draw('ch_share_canais', (el) => {
+  const d = dash.data('share_canais');
+  el.replaceChildren();
+  if (d.status !== 'ok' || !d.data.length) return;
+  const rows = d.data;
+  const w = Math.max(280, el.clientWidth || 600), bh = 40, h = bh + 4;
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`).attr('role', 'img').attr('aria-label', 'Share de receita por canal: ' + rows.map((r) => r.canal + ' ' + WR.F.pct0(r.share)).join(', '));
+  const tip = d3.select(el).append('div').attr('class', 'tip').style('display', 'none');
+  const show = (ev, r) => {
+    const [mx, my] = d3.pointer(ev, el); tip.style('display', null).html('');
+    tip.append('div').attr('class', 'd').text(r.canal);
+    tip.append('div').text('Share: ' + WR.F.pct(r.share));
+    tip.append('div').text('Receita: ' + WR.F.brl(r.receita));
+    if (r.inclui) tip.append('div').text(r.inclui);
+    WR.placeTip(el, tip, mx, my);
+  };
+  let x0 = 2; const W = w - 4;
+  rows.forEach((r) => {
+    const bw = r.share * W; if (bw <= 0) return;
+    svg.append('rect').attr('x', x0).attr('y', 2).attr('width', Math.max(0, bw - 2)).attr('height', bh).attr('rx', 4).attr('fill', r.cor)
+      .on('mousemove', (ev) => show(ev, r)).on('mouseleave', () => tip.style('display', 'none'));
+    if (bw > 40) svg.append('text').attr('x', x0 + bw / 2).attr('y', 2 + bh / 2 + 5).attr('text-anchor', 'middle').text(WR.F.pct0(r.share)).attr('fill', /^#(eda100|1baf7a|e87ba4|b9a19b)$/.test(r.cor) ? '#270d0f' : '#fff').style('font-size', '13px').style('font-weight', 700).style('pointer-events', 'none');
+    x0 += bw;
+  });
+  const lg = d3.select(el).append('ul').attr('class', 'lg-canais');
+  rows.forEach((r) => {
+    const li = lg.append('li').on('mousemove', (ev) => show(ev, r)).on('mouseleave', () => tip.style('display', 'none'));
+    li.append('span').attr('class', 'sw').style('background', r.cor);
+    li.append('span').text(r.canal + ' ');
+    li.append('b').text(WR.F.pct(r.share));
   });
 });
 dash.draw('faixa_nota', (el) => {

@@ -420,6 +420,49 @@ dash.calc('fb_kits_outros', {
   },
 });
 
+/* top kits de um canal de último clique (mesma conta dos kits do Facebook) */
+const kitsDoCanal = (pedidos_lc, canal) => {
+  const K = {};
+  pedidos_lc.filter((r) => r.canal === canal && r.kit && r.is_bottle === 1 && r.kit_garrafas).forEach((r) => {
+    const o = K[r.kit] || (K[r.kit] = { kit: r.kit, kit_nome: r.kit_nome, kits: 0, receita: 0, rec_sf: 0, garrafas: 0 });
+    o.kits += r.qtd / r.kit_garrafas; o.receita += r.rec + r.frete; o.rec_sf += r.rec_raw != null ? r.rec_raw : r.rec; o.garrafas += r.qtd;
+  });
+  return Object.values(K).sort((a, b) => b.kits - a.kits).slice(0, 5).map((o) => ({ kit: o.kit, kit_nome: o.kit_nome, kits: o.kits, pmv: o.garrafas ? o.rec_sf / o.garrafas : null, receita: o.receita }));
+};
+dash.calc('crm_kits_email', {
+  title: 'Top kits do email',
+  description: 'Kits vendidos (garrafas ÷ garrafas por kit), PMV (receita sem frete ÷ garrafas) e receita em pedidos com último clique em Email; os 5 com mais kits.',
+  inputs: ['pedidos_lc'],
+  fn: (pedidos_lc) => kitsDoCanal(pedidos_lc, 'Email'),
+});
+dash.calc('crm_kits_whats', {
+  title: 'Top kits do WhatsApp',
+  description: 'Kits vendidos (garrafas ÷ garrafas por kit), PMV (receita sem frete ÷ garrafas) e receita em pedidos com último clique em WhatsApp; os 5 com mais kits.',
+  inputs: ['pedidos_lc'],
+  fn: (pedidos_lc) => kitsDoCanal(pedidos_lc, 'WhatsApp'),
+});
+
+/* Share de receita por canal: em Hoje e Ontem pelos pedidos com último clique (ao vivo);
+   no mês, da planilha de canais. Sete canais com cor fixa; o resto soma em Outros. */
+dash.calc('share_canais', {
+  title: 'Share de receita por canal',
+  description: 'Receita last click de Facebook, Shopping, SEM Branded, SEM Non-branded, Email, WhatsApp e Criteo ÷ receita total, e o resto somado em Outros (Demand Gen, Afiliados, Bing, TikTok, App Push, SMS, Web Push, Display, Mailer, Outros e pedidos sem clique). Em Hoje e Ontem, pelos pedidos com último clique; no mês, pela planilha de canais.',
+  inputs: ['pedidos_lc', 'canais_todos'],
+  fn: (pedidos_lc, canais_todos) => {
+    const CAN = [['Facebook', 'Facebook', '#2a78d6'], ['Shopping', 'Shopping', '#eb6834'], ['SEM_Branded', 'SEM Branded', '#1baf7a'], ['SEM_NonBranded', 'SEM Non-branded', '#eda100'], ['Email', 'Email', '#e87ba4'], ['WhatsApp', 'WhatsApp', '#008300'], ['Criteo', 'Criteo', '#6250d6']];
+    const R = {}, OUT = {};
+    const add = (canal, v) => { if (!v) return; if (CAN.some((c) => c[0] === canal)) R[canal] = (R[canal] || 0) + v; else { const k = canal || 'Sem clique'; OUT[k] = (OUT[k] || 0) + v; } };
+    if (pedidos_lc.length) pedidos_lc.forEach((r) => add(r.canal, r.rec + r.frete));
+    else canais_todos.filter((r) => r.nivel === 'canal' || (r.nivel === 'grupo' && r.grupo === 'Outros')).forEach((r) => add(r.canal === 'TikTok' ? 'Tiktok' : r.canal, r.rec));
+    const outros = Object.values(OUT).reduce((s, v) => s + v, 0);
+    const tot = Object.values(R).reduce((s, v) => s + v, 0) + outros;
+    if (!tot) return [];
+    const rows = CAN.filter((c) => R[c[0]]).map((c) => ({ canal: c[1], receita: R[c[0]], share: R[c[0]] / tot, cor: c[2], inclui: null }));
+    if (outros) rows.push({ canal: 'Outros', receita: outros, share: outros / tot, cor: '#b9a19b', inclui: 'Inclui: ' + Object.keys(OUT).sort((a, b) => OUT[b] - OUT[a]).join(', ') });
+    return rows;
+  },
+});
+
 dash.calc('criativos_estoque', {
   title: 'Criativos × estoque',
   description: 'Os 15 anúncios de e-commerce com mais gasto: receita, ROAS e pedidos last click do anúncio, o kit que ele mais vende, estoque disponível desse kit e dias de cobertura no ritmo de venda do kit (todos os canais) no período.',
