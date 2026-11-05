@@ -67,6 +67,19 @@
 .wr th:first-child { position: sticky; }
 .wr .share-canais { min-height: 0; }
 .wr .chart.fino { min-height: 0; }
+/* Hoje: o card do mês até agora fica abaixo do atingimento do dia, na mesma coluna e mais discreto (fundo claro, número menor) */
+/* Hoje: atingimento do dia e do mês num bloco só, da altura do gráfico ao lado: o do dia em cima (ocupa o espaço que
+   sobra) e o do mês numa faixa clara e fina embaixo, colada nele */
+.wr .atg-col { display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; min-height: 100%; }
+.wr .atg-col .atg-box { flex: 1; border-radius: 0; padding: 14px 16px; }
+.wr .atg-col .atg-box .big { font-size: clamp(34px, 4vw, 46px); }
+.wr .atg-mini { display: grid; gap: 2px; padding: 9px 16px 11px; background: var(--ev-cream); border: 1px solid var(--ev-line); border-top: 0; border-radius: 0 0 18px 18px; color: #7a4a46; }
+.wr .atg-mini .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.wr .atg-mini .lb { font-family: var(--f-ret); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: 12px; color: var(--ev-wine); }
+.wr .atg-mini .big { font-family: var(--f-title); font-size: 22px; line-height: 1; color: var(--ev-dark); }
+.wr .atg-mini .big.up { color: var(--ev-good); } .wr .atg-mini .big.warn { color: var(--ev-warn); } .wr .atg-mini .big.down { color: var(--ev-bad); }
+.wr .atg-mini .s { font-size: 12px; line-height: 1.35; }
+.wr .atg-mini .s b { color: var(--ev-dark); font-weight: 600; }
 .wr .lg-canais { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ev-dark); }
 .wr .lg-canais li { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
 .wr .lg-canais .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
@@ -186,7 +199,7 @@ td .tp.vid { background: var(--ev-orange); }
 .wr .tile.acc-up { border-top-color: var(--ev-good); background: #f1f8f4; }
 .wr .tile.acc-warn { border-top-color: #f5c42e; background: #fffaf0; }
 .wr .tile.acc-down { border-top-color: var(--ev-red); background: #fff1f1; }
-.wr .hora-wrap { display: grid; grid-template-columns: minmax(11rem, 14rem) 1fr; gap: 16px; align-items: stretch; }
+.wr .hora-wrap { display: grid; grid-template-columns: minmax(10.5rem, 13rem) 1fr; gap: 16px; align-items: stretch; }
 @media (max-width: 640px) { .wr .hora-wrap { grid-template-columns: 1fr; } }
 .wr .atg-box { border-radius: 18px; padding: 16px; display: grid; gap: 4px; align-content: center; background: var(--ev-wine); color: #fff; }
 .wr .atg-box.acc-up { background: var(--ev-good); }
@@ -246,7 +259,7 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="tile"><span class="lb">PMV (por garrafa)</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="pmv" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_pmv" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">CM2 %</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="cm2_pct" data-fmt="cm2" data-accent="cm2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_cm2_pp" data-fmt="pp">—</span> YoY</span></div>
       <div class="tile c-nohoje"><span class="lb">Investimento (Growth + Outros)</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest_plan" data-fmt="brl">—</span> · <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="var_invest_yoy" data-fmt="delta">—</span> YoY</span></div>
-      <div class="tile c-nohoje"><span class="lb">Atingimento do investimento</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="ating_invest" data-fmt="atg">—</span><span class="s">investimento ÷ plano</span></div>
+      <div class="tile c-nohoje"><span class="lb">Atingimento do investimento</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="ating_invest" data-fmt="atginv" data-accent="atginv">—</span><span class="s">investimento ÷ plano · verde até 100%, amarelo até 110%</span></div>
       <div class="tile c-nohoje"><span class="lb">ROAS last click</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s"><span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="var_roas_yoy" data-fmt="delta">—</span> YoY · receita LC ÷ investimento</span></div>
     </div>
 
@@ -254,12 +267,20 @@ td .tp.vid { background: var(--ev-orange); }
       <h3>Receita acumulada a cada 15 minutos</h3>
       <p class="cap">Real de hoje (boleto condition: boleto a 65% e PIX a 75%) contra o planejado (tracejado): meta last click do dia distribuída pela curva média a cada 15 minutos dos mesmos dias da semana nas 6 semanas anteriores. O atingimento vai até o minuto do pedido mais recente já carregado, com o planejado proporcional no bloco de 15 minutos em andamento.</p>
       <div class="hora-wrap">
+        <div class="atg-col">
         <div class="atg-box" data-fetchpriority="high">
           <span class="lb">Atingimento até <span data-draw="kv" data-source="hora_resumo" data-row="0" data-field="ate" data-fmt="txt">—</span></span>
           <span class="big" data-draw="kv" data-source="hora_resumo" data-row="0" data-field="ating_acum" data-fmt="atg" data-accent="atg">—</span>
           <span class="s">real <b data-draw="kv" data-source="hora_resumo" data-row="0" data-field="real_acum" data-fmt="brl">—</b></span>
           <span class="s">planejado <b data-draw="kv" data-source="hora_resumo" data-row="0" data-field="plano_acum" data-fmt="brl">—</b></span>
           <span class="s">gap <b data-draw="kv" data-source="hora_resumo" data-row="0" data-field="gap" data-fmt="brlsg">—</b></span>
+        </div>
+        <div class="atg-mini">
+          <div class="r1"><span class="lb">Mês até <span data-draw="kv" data-source="mtd_agora" data-row="0" data-field="ate" data-fmt="txt">—</span></span>
+          <span class="big" data-draw="kv" data-source="mtd_agora" data-row="0" data-field="ating" data-fmt="atg">—</span></div>
+          <span class="s">real <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="real" data-fmt="brl">—</b> · plan. <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="planejado" data-fmt="brl">—</b></span>
+          <span class="s">gap <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="gap" data-fmt="brlsg">—</b></span>
+        </div>
         </div>
         <div class="chart" data-draw="ch_hora" data-source="hora"></div>
       </div>
@@ -426,14 +447,14 @@ td .tp.vid { background: var(--ev-orange); }
         <h3>Top 5 kits mais vendidos em Google Shopping</h3>
         <p class="cap">Kits vendidos em pedidos com último clique no Google em campanhas com "Pmax" ou "Shopping" no nome (e pedidos do canal Shopping sem utm_campaign).</p>
         <div class="tw"><table data-source="kits_gshop" data-row-key="kit">
-          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" aria-sort="descending" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" data-fmt="brl">Receita</th></tr></thead>
+          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita</th></tr></thead>
           <tbody data-draw="tbl"></tbody></table></div>
       </div>
       <div class="card" id="kits-goutras">
         <h3>Top 5 kits mais vendidos em Google (outras campanhas)</h3>
         <p class="cap">Kits vendidos em pedidos com último clique nas demais campanhas do Google (SEM Branded, SEM Non-branded, Demand Gen): todas sem "Pmax" ou "Shopping" no nome.</p>
         <div class="tw"><table data-source="kits_goutras" data-row-key="kit">
-          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" aria-sort="descending" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" data-fmt="brl">Receita</th></tr></thead>
+          <thead><tr><th tabindex="0" data-field="kit_nome">Kit<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="kit">SKU</th><th tabindex="0" data-field="kits" data-fmt="int">Kits</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita</th></tr></thead>
           <tbody data-draw="tbl"></tbody></table></div>
       </div>
     </div>
@@ -466,7 +487,7 @@ td .tp.vid { background: var(--ev-orange); }
       </div>
     </div>
 
-    <div class="c-dia grid">
+    <div class="grid">
       <div class="card" id="camp-email">
         <span class="pill-crm email">Email</span>
         <h3>Top 5 campanhas de email · receita last click</h3>
@@ -485,7 +506,7 @@ td .tp.vid { background: var(--ev-orange); }
       </div>
     </div>
 
-    <div class="c-dia grid">
+    <div class="grid">
       <div class="card" id="kits-email">
         <span class="pill-crm email">Email</span>
         <h3>Top kits do email</h3>
@@ -577,6 +598,7 @@ window.WR = (function () {
     pctn: (v) => (ok(v) ? nf1.format(v) + '%' : '—'),
     pctn2: (v) => (ok(v) ? nf2.format(v) + '%' : '—'),
     atg: (v) => (ok(v) ? nf0.format(v * 100) + '%' : '—'),
+    atginv: (v) => (ok(v) ? nf0.format(v * 100) + '%' : '—'),
     delta: (v) => (ok(v) ? sg(v) + nf0.format(Math.abs(v * 100)) + '%' : '—'),
     deltainv: (v) => (ok(v) ? sg(v) + nf0.format(Math.abs(v * 100)) + '%' : '—'),
     pp: (v) => (ok(v) ? sg(v) + nf1.format(Math.abs(v * 100)) + ' p.p.' : '—'),
@@ -593,6 +615,8 @@ window.WR = (function () {
     deltainv: (v) => (!ok(v) || Math.abs(v) < 0.005 ? 'flat' : v < 0 ? 'up' : 'down'),
     pp: (v) => (!ok(v) || Math.abs(v) < 0.0005 ? 'flat' : v > 0 ? 'up' : 'down'),
     atg: (v) => (!ok(v) ? '' : v >= 1 ? 'up' : v >= 0.9 ? 'warn' : 'down'),
+    /* atingimento do investimento: gastar até o plano é bom; até 10% acima, atenção; mais que isso, estourou */
+    atginv: (v) => (!ok(v) ? '' : v <= 1 ? 'up' : v <= 1.1 ? 'warn' : 'down'),
     alerta: (v) => (v === 'Crítico' || v === 'Esgotado' ? 'down' : v === 'Atenção' ? 'warn' : v === 'OK' ? 'up' : ''),
     /* ROAS: contra a referência da linha (ROAS planejado do canal, ou ROAS last click do Facebook no período para anúncios) */
     x: (v, r) => { if (r && (r.canal === 'Facebook' || r.anuncio != null)) { if (!ok(v)) return ''; return v > 3.7 ? 'up' : v >= 3 ? 'warn' : 'down'; } const ref = r && (r.roas_ref != null ? r.roas_ref : r.roas_plan); if (!ok(v) || !ok(ref) || !ref) return ''; return v >= ref ? 'up' : v >= ref * 0.8 ? 'warn' : 'down'; },
