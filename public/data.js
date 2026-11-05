@@ -368,16 +368,52 @@ dash.calc('fb_resumo', {
   },
 });
 
+/* Base do Facebook por último clique, igual nas três abas: em Hoje e Ontem sai dos pedidos um a um (pedidos_lc);
+   no mês, que não traz pedido a pedido, já vem somada do Redshift (fb_lc_agg). Devolve por campanha e por anúncio
+   { receita, pedidos, novos } e por anúncio × kit { kits, receita, rec_sf, garrafas }, com nome, garrafas e estoque do kit. */
+const fbBase = (pedidos_lc, fb_lc_agg) => {
+  const camp = {}, ad = {}, adKit = {}, kitInfo = {};
+  const kk = (a, kit) => { const o = adKit[a] || (adKit[a] = {}); return o[kit] || (o[kit] = { kits: 0, receita: 0, rec_sf: 0, garrafas: 0 }); };
+  const addKit = (a, r, qtd, rec, recSf) => { const o = kk(a, r.kit); o.kits += qtd / r.kit_garrafas; o.receita += rec; o.rec_sf += recSf; o.garrafas += qtd; kitInfo[r.kit] = { kit_nome: r.kit_nome, kit_garrafas: r.kit_garrafas, estoque_kits: r.estoque_kits }; };
+  if (pedidos_lc.length) {
+    const C = {}, A = {};
+    const acc = (M, k, r) => { const o = M[k] || (M[k] = { receita: 0, p: new Set(), n: new Set() }); o.receita += r.rec + r.frete; o.p.add(r.pedido); if (r.is_first_order === 1) o.n.add(r.pedido); };
+    pedidos_lc.filter((r) => r.canal === 'Facebook').forEach((r) => {
+      acc(C, r.campanha || '(sem utm_campaign)', r); acc(A, r.anuncio || '', r);
+      if (r.kit && r.is_bottle === 1 && r.kit_garrafas) addKit(r.anuncio || '', r, r.qtd, r.rec + r.frete, r.rec_raw != null ? r.rec_raw : r.rec);
+    });
+    const fim = (M, out) => Object.keys(M).forEach((k) => { out[k] = { receita: M[k].receita, pedidos: M[k].p.size, novos: M[k].n.size }; });
+    fim(C, camp); fim(A, ad);
+  } else {
+    fb_lc_agg.forEach((r) => {
+      if (r.tipo === 'camp') camp[r.chave || '(sem utm_campaign)'] = { receita: r.rec + r.frete, pedidos: r.pedidos, novos: r.novos };
+      else if (r.tipo === 'ad') ad[r.chave || ''] = { receita: r.rec + r.frete, pedidos: r.pedidos, novos: r.novos };
+      else if (r.tipo === 'kit' && r.kit && r.kit_garrafas) addKit(r.chave || '', r, r.qtd, r.rec + r.frete, r.rec_raw);
+    });
+  }
+  return { camp, ad, adKit, kitInfo };
+};
+/* kits somados entre os anúncios que passam no filtro (catálogo ou não) */
+const fbKits = (base, filtro) => {
+  const K = {};
+  Object.keys(base.adKit).filter(filtro).forEach((a) => Object.keys(base.adKit[a]).forEach((kit) => {
+    const s = base.adKit[a][kit], o = K[kit] || (K[kit] = { kit, kit_nome: base.kitInfo[kit].kit_nome, kits: 0, receita: 0, rec_sf: 0, garrafas: 0 });
+    o.kits += s.kits; o.receita += s.receita; o.rec_sf += s.rec_sf; o.garrafas += s.garrafas;
+  }));
+  return Object.values(K).sort((a, b) => b.kits - a.kits).slice(0, 5).map((o) => ({ kit: o.kit, kit_nome: o.kit_nome, kits: o.kits, pmv: o.garrafas ? o.rec_sf / o.garrafas : null, receita: o.receita }));
+};
+
 dash.calc('fb_top_cac', {
   title: 'Top 5 anúncios com mais ativações',
-  description: 'Gasto por anúncio (somado pelo nome, campanhas de e-commerce) ÷ novos clientes, com o CAC de novos clientes de todos os anúncios como referência (cac_ref): pedidos pagos com is_first_order = 1 e último clique no anúncio (utm_content). Os 5 com mais novos clientes.',
-  inputs: ['meta_ads', 'pedidos_lc'],
-  fn: (meta_ads, pedidos_lc) => {
+  description: 'Gasto por anúncio (somado pelo nome, campanhas de e-commerce) ÷ novos clientes, com o CAC de novos clientes de todos os anúncios como referência (cac_ref): pedidos pagos com is_first_order = 1 e último clique no anúncio (utm_content). Os 5 com mais novos clientes. No mês, a partir dos pedidos já somados no Redshift.',
+  inputs: ['meta_ads', 'pedidos_lc', 'fb_lc_agg'],
+  fn: (meta_ads, pedidos_lc, fb_lc_agg) => {
     const A = {}; meta_ads.filter((r) => !/clube|install/i.test(r.campanha || '')).forEach((r) => { A[r.anuncio] = (A[r.anuncio] || 0) + r.gasto; });
-    const N = {}; pedidos_lc.filter((r) => r.canal === 'Facebook' && r.is_first_order === 1).forEach((r) => { (N[r.anuncio] || (N[r.anuncio] = new Set())).add(r.pedido); });
-    const totG = Object.values(A).reduce((s, g) => s + g, 0), totN = Object.values(N).reduce((s, p) => s + p.size, 0);
+    const base = fbBase(pedidos_lc, fb_lc_agg);
+    const N = {}; Object.keys(base.ad).forEach((k) => { N[k] = base.ad[k].novos; });
+    const totG = Object.values(A).reduce((s, g) => s + g, 0), totN = Object.values(N).reduce((s, n) => s + n, 0);
     const ref = totN ? totG / totN : null;
-    return Object.keys(A).map((k) => { const n = N[k] ? N[k].size : 0; return { anuncio: k, gasto: A[k], novos: n, cac: n ? A[k] / n : null, cac_ref: ref }; }).filter((r) => r.novos > 0).sort((a, b) => b.novos - a.novos || a.cac - b.cac).slice(0, 5).map((r) => Object.assign(r, { tipo: /^VID/i.test(r.anuncio) ? 'Vídeo' : /^EST/i.test(r.anuncio) ? 'Estático' : /^CAT/i.test(r.anuncio) ? 'Catálogo' : 'Outro', influ: /influ/i.test(r.anuncio) }));
+    return Object.keys(A).map((k) => { const n = N[k] || 0; return { anuncio: k, gasto: A[k], novos: n, cac: n ? A[k] / n : null, cac_ref: ref }; }).filter((r) => r.novos > 0).sort((a, b) => b.novos - a.novos || a.cac - b.cac).slice(0, 5).map((r) => Object.assign(r, { tipo: /^VID/i.test(r.anuncio) ? 'Vídeo' : /^EST/i.test(r.anuncio) ? 'Estático' : /^CAT/i.test(r.anuncio) ? 'Catálogo' : 'Outro', influ: /influ/i.test(r.anuncio) }));
   },
 });
 
@@ -394,30 +430,16 @@ dash.calc('fb_top_cpc', {
 dash.calc('fb_kits_cat', {
   title: 'Top kits do catálogo',
   description: 'Kits vendidos (garrafas ÷ garrafas por kit), PMV (receita sem frete ÷ garrafas) e receita em pedidos com último clique no Facebook em anúncios de catálogo (nome começa com CAT); os 5 com mais kits.',
-  inputs: ['pedidos_lc'],
-  fn: (pedidos_lc) => {
-    const K = {};
-    pedidos_lc.filter((r) => r.canal === 'Facebook' && r.kit && r.is_bottle === 1 && r.kit_garrafas && /^CAT/i.test(r.anuncio || '')).forEach((r) => {
-      const o = K[r.kit] || (K[r.kit] = { kit: r.kit, kit_nome: r.kit_nome, kits: 0, receita: 0, rec_sf: 0, garrafas: 0 });
-      o.kits += r.qtd / r.kit_garrafas; o.receita += r.rec + r.frete; o.rec_sf += r.rec_raw != null ? r.rec_raw : r.rec; o.garrafas += r.qtd;
-    });
-    return Object.values(K).sort((a, b) => b.kits - a.kits).slice(0, 5).map((o) => ({ kit: o.kit, kit_nome: o.kit_nome, kits: o.kits, pmv: o.garrafas ? o.rec_sf / o.garrafas : null, receita: o.receita }));
-  },
+  inputs: ['pedidos_lc', 'fb_lc_agg'],
+  fn: (pedidos_lc, fb_lc_agg) => fbKits(fbBase(pedidos_lc, fb_lc_agg), (a) => /^CAT/i.test(a)),
 });
 
 
 dash.calc('fb_kits_outros', {
   title: 'Top kits dos outros anúncios',
   description: 'Kits vendidos (garrafas ÷ garrafas por kit), PMV (receita sem frete ÷ garrafas) e receita em pedidos com último clique no Facebook em anúncios que não são de catálogo (nome não começa com CAT); os 5 com mais kits.',
-  inputs: ['pedidos_lc'],
-  fn: (pedidos_lc) => {
-    const K = {};
-    pedidos_lc.filter((r) => r.canal === 'Facebook' && r.kit && r.is_bottle === 1 && r.kit_garrafas && !/^CAT/i.test(r.anuncio || '')).forEach((r) => {
-      const o = K[r.kit] || (K[r.kit] = { kit: r.kit, kit_nome: r.kit_nome, kits: 0, receita: 0, rec_sf: 0, garrafas: 0 });
-      o.kits += r.qtd / r.kit_garrafas; o.receita += r.rec + r.frete; o.rec_sf += r.rec_raw != null ? r.rec_raw : r.rec; o.garrafas += r.qtd;
-    });
-    return Object.values(K).sort((a, b) => b.kits - a.kits).slice(0, 5).map((o) => ({ kit: o.kit, kit_nome: o.kit_nome, kits: o.kits, pmv: o.garrafas ? o.rec_sf / o.garrafas : null, receita: o.receita }));
-  },
+  inputs: ['pedidos_lc', 'fb_lc_agg'],
+  fn: (pedidos_lc, fb_lc_agg) => fbKits(fbBase(pedidos_lc, fb_lc_agg), (a) => !/^CAT/i.test(a)),
 });
 
 /* top kits de um canal de último clique (mesma conta dos kits do Facebook) */
@@ -468,25 +490,30 @@ dash.calc('share_canais', {
 dash.calc('criativos_estoque', {
   title: 'Criativos × estoque',
   description: 'Os 15 anúncios de e-commerce com mais gasto: receita, ROAS e pedidos last click do anúncio, o kit que ele mais vende, estoque disponível desse kit e dias de cobertura no ritmo de venda do kit (todos os canais) no período.',
-  inputs: ['meta_ads', 'pedidos_lc'],
-  fn: (meta_ads, pedidos_lc) => {
-    if (!pedidos_lc.length) return [];
+  inputs: ['meta_ads', 'pedidos_lc', 'fb_lc_agg', 'kits', 'vendas'],
+  fn: (meta_ads, pedidos_lc, fb_lc_agg, kits, vendas) => {
+    if (!pedidos_lc.length && !fb_lc_agg.length) return [];
     const A = {}; meta_ads.filter((r) => !/clube|install/i.test(r.campanha || '')).forEach((r) => { A[r.anuncio] = (A[r.anuncio] || 0) + r.gasto; });
-    const tot = {}, info = {};
-    pedidos_lc.forEach((r) => { if (r.kit && r.is_bottle === 1 && r.kit_garrafas) { tot[r.kit] = (tot[r.kit] || 0) + r.qtd / r.kit_garrafas; info[r.kit] = r; } });
+    const base = fbBase(pedidos_lc, fb_lc_agg);
+    /* kits vendidos por dia de cada kit em todos os canais: no dia, dos pedidos; no mês, do ranking de kits ÷ dias do período */
+    const vendDia = {};
+    if (pedidos_lc.length) pedidos_lc.forEach((r) => { if (r.kit && r.is_bottle === 1 && r.kit_garrafas) vendDia[r.kit] = (vendDia[r.kit] || 0) + r.qtd / r.kit_garrafas; });
+    else {
+      const dias = vendas.length ? Math.round((Date.parse(vendas[0].fim) - Date.parse(vendas[0].ini)) / 864e5) + 1 : 1;
+      kits.forEach((r) => { if (r.kit && r.kit_garrafas) vendDia[r.kit] = r.garrafas / r.kit_garrafas / dias; });
+    }
     const totG = Object.values(A).reduce((s, g) => s + g, 0);
-    const totR = pedidos_lc.filter((r) => r.canal === 'Facebook' && A[r.anuncio] != null).reduce((s, r) => s + r.rec + r.frete, 0);
+    const totR = Object.keys(A).reduce((s, a) => s + (base.ad[a] ? base.ad[a].receita : 0), 0);
     const ref = totG ? totR / totG : null;
     return Object.keys(A).sort((a, b) => A[b] - A[a]).slice(0, 15).map((ad) => {
-      const rows = pedidos_lc.filter((r) => r.canal === 'Facebook' && r.anuncio === ad);
-      const rec = rows.reduce((s, r) => s + r.rec + r.frete, 0);
-      const k = {}; rows.forEach((r) => { if (r.kit && r.is_bottle === 1 && r.kit_garrafas) k[r.kit] = (k[r.kit] || 0) + r.qtd / r.kit_garrafas; });
-      const top = Object.keys(k).sort((a, b) => k[b] - k[a])[0];
-      const i = top ? info[top] : null;
-      const vend = top ? tot[top] : null;
-      const cob = i && vend ? i.estoque_kits / vend : null;
-      const alerta = !i ? null : i.estoque_kits != null && i.estoque_kits <= 0 ? 'Esgotado' : cob <= 3 ? 'Crítico' : cob < 7 ? 'Atenção' : 'OK';
-      return { anuncio: ad, tipo: /^VID/i.test(ad) ? 'Vídeo' : /^EST/i.test(ad) ? 'Estático' : /^CAT/i.test(ad) ? 'Catálogo' : 'Outro', influ: /influ/i.test(ad), gasto: A[ad], receita: rec, roas: A[ad] ? rec / A[ad] : null, roas_ref: ref, pedidos: new Set(rows.map((r) => r.pedido)).size, kit: top || null, kit_nome: i ? i.kit_nome : rows.length ? 'Só avulsos' : 'Sem pedidos LC', kits_vendidos: vend, estoque_kits: i ? i.estoque_kits : null, cobertura_dias: cob, alerta };
+      const o = base.ad[ad], rec = o ? o.receita : 0;
+      const k = base.adKit[ad] || {};
+      const top = Object.keys(k).sort((a, b) => k[b].kits - k[a].kits)[0];
+      const i = top ? base.kitInfo[top] : null;
+      const vend = top && vendDia[top] ? vendDia[top] : null;
+      const cob = i && i.estoque_kits != null && vend ? i.estoque_kits / vend : null;
+      const alerta = !i ? null : i.estoque_kits != null && i.estoque_kits <= 0 ? 'Esgotado' : cob == null ? null : cob <= 3 ? 'Crítico' : cob < 7 ? 'Atenção' : 'OK';
+      return { anuncio: ad, tipo: /^VID/i.test(ad) ? 'Vídeo' : /^EST/i.test(ad) ? 'Estático' : /^CAT/i.test(ad) ? 'Catálogo' : 'Outro', influ: /influ/i.test(ad), gasto: A[ad], receita: rec, roas: A[ad] ? rec / A[ad] : null, roas_ref: ref, pedidos: o ? o.pedidos : 0, kit: top || null, kit_nome: i ? i.kit_nome : o ? 'Só avulsos' : 'Sem pedidos LC', kits_vendidos: vend, estoque_kits: i ? i.estoque_kits : null, cobertura_dias: cob, alerta };
     });
   },
 });
@@ -780,16 +807,11 @@ dash.calc('plano_gap', {
 dash.calc('fb_campanhas', {
   title: 'Melhores campanhas do Facebook',
   description: 'Receita (produto + frete), pedidos e novos clientes dos pedidos pagos com último clique no Facebook por utm_campaign, com o gasto da campanha de mesmo nome no Meta Ads e ROAS = receita ÷ gasto; as 10 de maior receita.',
-  inputs: ['pedidos_lc', 'meta_ads'],
-  fn: (pedidos_lc, meta_ads) => {
+  inputs: ['pedidos_lc', 'meta_ads', 'fb_lc_agg'],
+  fn: (pedidos_lc, meta_ads, fb_lc_agg) => {
     const G = {}; meta_ads.forEach((r) => { const k = String(r.campanha || '').toLowerCase(); G[k] = (G[k] || 0) + r.gasto; });
-    const C = {};
-    pedidos_lc.filter((r) => r.canal === 'Facebook').forEach((r) => {
-      const k = r.campanha || '(sem utm_campaign)';
-      const o = C[k] || (C[k] = { campanha: k, receita: 0, p: new Set(), n: new Set() });
-      o.receita += r.rec + r.frete; o.p.add(r.pedido); if (r.is_first_order === 1) o.n.add(r.pedido);
-    });
-    return Object.values(C).map((o) => { const g = G[o.campanha.toLowerCase()] || null; return { campanha: o.campanha, canal: 'Facebook', gasto: g, receita: o.receita, roas: g ? o.receita / g : null, pedidos: o.p.size, novos: o.n.size }; }).sort((a, b) => b.receita - a.receita).slice(0, 10);
+    const C = fbBase(pedidos_lc, fb_lc_agg).camp;
+    return Object.keys(C).map((k) => { const o = C[k], g = G[k.toLowerCase()] || null; return { campanha: k, canal: 'Facebook', gasto: g, receita: o.receita, roas: g ? o.receita / g : null, pedidos: o.pedidos, novos: o.novos }; }).sort((a, b) => b.receita - a.receita).slice(0, 10);
   },
 });
 
