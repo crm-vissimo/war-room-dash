@@ -66,6 +66,7 @@
 .wr th:first-child, .wr td:first-child { text-align: left; }
 .wr th:first-child { position: sticky; }
 .wr .share-canais { min-height: 0; }
+.wr .chart.fino { min-height: 0; }
 .wr .lg-canais { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ev-dark); }
 .wr .lg-canais li { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
 .wr .lg-canais .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
@@ -357,11 +358,11 @@ td .tp.vid { background: var(--ev-orange); }
 
     <div class="c-mtd card" id="meta-cpm">
       <h3>CPM por dia · mês</h3>
-      <p class="cap">Conta Meta inteira, mês corrente.</p>
-      <div class="chart" data-draw="ch_cpm" data-source="meta_diario"></div>
+      <p class="cap">Conta Meta inteira, mês corrente, com o mesmo mês do ano passado para comparar.</p>
+      <div class="chart fino" data-draw="ch_cpm" data-source="meta_diario"></div>
     </div>
 
-    <div class="c-dia card" id="fb-campanhas">
+    <div class="card" id="fb-campanhas">
       <h3>Melhores campanhas do Facebook · receita last click</h3>
       <p class="cap">Campanhas (utm_campaign) com mais receita nos pedidos pagos com último clique no Facebook, com o gasto da mesma campanha no Meta Ads.</p>
       <div class="tw"><table class="nm-full" data-source="fb_campanhas" data-row-key="campanha">
@@ -369,7 +370,7 @@ td .tp.vid { background: var(--ev-orange); }
         <tbody data-draw="tbl"></tbody></table></div>
     </div>
 
-    <div class="c-dia card" id="criativos-estoque">
+    <div class="card" id="criativos-estoque">
       <h3>Principais criativos × estoque do kit</h3>
       <p class="cap">Os anúncios com mais gasto no período: receita e pedidos last click do anúncio, o kit que ele mais vende e quantos dias o estoque desse kit aguenta no ritmo de venda do kit no período.</p>
       <div class="tw"><table data-source="criativos_estoque" data-row-key="anuncio" data-limit="5" data-limit-max="15">
@@ -378,7 +379,7 @@ td .tp.vid { background: var(--ev-orange); }
       <button type="button" class="more" aria-expanded="false"><span class="m-closed">Ver até o top 15 ▾</span><span class="m-open" hidden>Mostrar só o top 5 ▴</span></button>
     </div>
 
-    <div class="c-dia grid">
+    <div class="grid">
       <div class="card" id="kits-catalogo">
         <h3>Top kits do catálogo</h3>
         <p class="cap">Kits vendidos em pedidos com último clique em anúncios de catálogo (nome começa com CAT).</p>
@@ -395,7 +396,7 @@ td .tp.vid { background: var(--ev-orange); }
       </div>
     </div>
     <div class="grid">
-      <div class="c-dia card" id="top-cac">
+      <div class="card" id="top-cac">
         <h3>Top 5 anúncios com mais ativações</h3>
         <p class="cap">Novos clientes = pedidos pagos de primeira compra (is_first_order = 1) com último clique no anúncio (utm_content). CAC = gasto do anúncio ÷ novos clientes.</p>
         <div class="tw"><table data-source="fb_top_cac" data-row-key="anuncio">
@@ -411,7 +412,6 @@ td .tp.vid { background: var(--ev-orange); }
       </div>
     </div>
 
-    <p class="c-mtd note">Melhores campanhas, criativos × estoque, kits do catálogo e ativações de novos clientes cruzam pedido a pedido e ficam nas abas Hoje e Ontem.</p>
     <div class="c-nohoje sub-google" id="google">
       <h3 class="sub-h">Google</h3>
     <div class="card" id="google-canais">
@@ -1072,39 +1072,54 @@ dash.draw('ch_diario', (el) => {
     .on('mouseleave', () => tip.style('display', 'none'));
 });
 
-function metaChart(el, field, fmt, kind) {
-  const d = dash.data('meta_diario');
+/* CPM por dia do mês: linha fina com o valor de cada dia escrito e o mesmo mês do ano passado para comparar */
+dash.draw('ch_cpm', (el) => {
+  const d = dash.data('meta_diario'), dl = dash.data('meta_diario_ly');
   el.replaceChildren();
   if (d.status !== 'ok' || !d.data.length) return;
-  const rows = d.data;
-  const { svg, tip, w, h } = WR.chartBox(el);
-  const y = d3.scaleLinear([0, (d3.max(rows, (r) => r[field]) || 1) * 1.1], [h - 24, 10]).nice();
-  const ml = WR.leftMargin(svg, y.ticks(4).map(fmt));
-  const x = d3.scaleBand(rows.map((r) => r.data), [ml, w - 8]).padding(0.25);
-  const ga = svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(fmt).tickSize(-(w - 8 - ml)));
+  const rows = d.data.filter((r) => r.cpm > 0), ly = dl.status === 'ok' ? dl.data.filter((r) => r.cpm > 0) : [];
+  if (!rows.length) return;
+  const mes = rows[0].data.slice(0, 7);
+  const nd = new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5, 7), 0)).getUTCDate();
+  const dia = (r) => +r.data.slice(8, 10);
+  const w = Math.max(280, el.clientWidth || 600), h = 150;
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`).attr('role', 'img')
+    .attr('aria-label', 'CPM por dia: ' + rows.map((r) => dia(r) + ' ' + WR.F.brl2(r.cpm)).join(', '));
+  const tip = d3.select(el).append('div').attr('class', 'tip').style('display', 'none');
+  const max = d3.max(rows.concat(ly), (r) => r.cpm) || 1;
+  const y = d3.scaleLinear([0, max * 1.25], [h - 22, 8]).nice();
+  const ml = WR.leftMargin(svg, y.ticks(3).map(WR.F.brl2));
+  const x = d3.scalePoint(d3.range(1, nd + 1), [ml + 10, w - 12]);
+  const ga = svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(3).tickFormat(WR.F.brl2).tickSize(-(w - 12 - ml)));
   WR.styleAxis(ga); ga.select('.domain').remove();
-  const every = Math.ceil(rows.length / Math.max(4, Math.floor((w - ml) / 34)));
-  const gx = svg.append('g').attr('transform', `translate(0,${h - 24})`).call(d3.axisBottom(x).tickValues(rows.map((r) => r.data).filter((_, i) => i % every === 0)).tickFormat((s) => String(+s.slice(8, 10))));
+  const every = Math.ceil(nd / Math.max(4, Math.floor((w - ml) / 34)));
+  const gx = svg.append('g').attr('transform', `translate(0,${h - 22})`).call(d3.axisBottom(x).tickValues(d3.range(1, nd + 1).filter((v) => (v - 1) % every === 0)));
   WR.styleAxis(gx);
-  const cx = (r) => x(r.data) + x.bandwidth() / 2;
-  if (kind === 'bar') {
-    const bw = Math.min(32, x.bandwidth());
-    svg.append('g').selectAll('rect').data(rows).join('rect').attr('x', (r) => cx(r) - bw / 2).attr('width', bw).attr('y', (r) => y(r[field])).attr('height', (r) => y(0) - y(r[field])).attr('rx', 2).attr('fill', '#f9182d');
-  } else {
-    svg.append('path').datum(rows).attr('d', d3.line().x(cx).y((r) => y(r[field]))).attr('fill', 'none').attr('stroke', '#751614').attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
-    svg.append('g').selectAll('circle').data(rows).join('circle').attr('cx', cx).attr('cy', (r) => y(r[field])).attr('r', 2.5).attr('fill', '#751614');
-  }
-  svg.append('g').selectAll('rect.hit').data(rows).join('rect').attr('class', 'hit').attr('x', (r) => x(r.data)).attr('width', x.bandwidth()).attr('y', 0).attr('height', h - 24).attr('fill', 'transparent')
-    .on('mousemove', (ev, r) => {
+  const line = d3.line().x((r) => x(dia(r))).y((r) => y(r.cpm));
+  if (ly.length) svg.append('path').datum(ly).attr('d', line).attr('fill', 'none').attr('stroke', '#f4a384').attr('stroke-width', 2).attr('stroke-linejoin', 'round');
+  svg.append('path').datum(rows).attr('d', line).attr('fill', 'none').attr('stroke', '#751614').attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+  svg.append('g').selectAll('circle').data(rows).join('circle').attr('cx', (r) => x(dia(r))).attr('cy', (r) => y(r.cpm)).attr('r', 3).attr('fill', '#751614').attr('stroke', '#fff').attr('stroke-width', 1.5);
+  /* valor de cada dia acima do ponto; com pouco espaço, um sim, um não (o último sempre) */
+  const passo = x.step() >= 40 ? 1 : 2;
+  svg.append('g').selectAll('text').data(rows.filter((r, i) => i % passo === 0 || i === rows.length - 1)).join('text')
+    .attr('x', (r) => x(dia(r))).attr('y', (r) => y(r.cpm) - 8).attr('text-anchor', 'middle').text((r) => WR.F.brl2(r.cpm).replace('R$ ', ''))
+    .attr('fill', '#270d0f').style('font-size', '11px').style('font-weight', 600);
+  const lg = svg.append('g').attr('transform', `translate(${w - 12},12)`).attr('text-anchor', 'end').style('font-size', '12px');
+  lg.append('text').text('— ano passado').attr('fill', '#c4623f').attr('x', 0);
+  lg.append('text').text('— este mês').attr('fill', '#751614').attr('x', -96);
+  const LY = new Map(ly.map((r) => [dia(r), r.cpm])), TY = new Map(rows.map((r) => [dia(r), r.cpm]));
+  svg.append('rect').attr('x', ml).attr('y', 0).attr('width', w - 12 - ml).attr('height', h - 22).attr('fill', 'transparent')
+    .on('mousemove', (ev) => {
       const [mx, my] = d3.pointer(ev, svg.node());
+      const dd = Math.max(1, Math.min(nd, Math.round((mx - x(1)) / x.step()) + 1));
       tip.style('display', null).html('');
-      tip.append('div').attr('class', 'd').text(r.data.slice(8, 10) + '/' + r.data.slice(5, 7));
-      tip.append('div').text(fmt(r[field]));
+      tip.append('div').attr('class', 'd').text('Dia ' + dd);
+      tip.append('div').text('Este mês: ' + (TY.has(dd) ? WR.F.brl2(TY.get(dd)) : '—'));
+      tip.append('div').text('Ano passado: ' + (LY.has(dd) ? WR.F.brl2(LY.get(dd)) : '—'));
       WR.placeTip(el, tip, mx * (el.clientWidth / w), my * (el.clientWidth / w));
     })
     .on('mouseleave', () => tip.style('display', 'none'));
-}
-dash.draw('ch_cpm', (el) => metaChart(el, 'cpm', (v) => WR.F.brl2(v), 'line'));
+});
 </script>
 
 <script src="data.js"></script>
