@@ -443,23 +443,25 @@ dash.calc('crm_kits_whats', {
 });
 
 /* Share de receita por canal: em Hoje e Ontem pelos pedidos com último clique (ao vivo);
-   no mês, da planilha de canais. Sete canais com cor fixa; o resto soma em Outros. */
+   no mês, da planilha de canais. Os 13 grupos da legenda de canais da Evino, sempre todos (com 0% quando não houver
+   receita), cada um com sua cor fixa. */
 dash.calc('share_canais', {
   title: 'Share de receita por canal',
-  description: 'Receita last click de Facebook, Shopping, SEM Branded, SEM Non-branded, Email, WhatsApp e Criteo ÷ receita total, e o resto somado em Outros (Demand Gen, Afiliados, Bing, TikTok, App Push, SMS, Web Push, Display, Mailer, Outros e pedidos sem clique). Em Hoje e Ontem, pelos pedidos com último clique; no mês, pela planilha de canais.',
+  description: 'Receita last click ÷ receita total em 13 grupos: Afiliados, AppPush, Criteo, Email, Facebook, Orgânico/Outros (Outros e pedidos sem clique), Outros CRM (Web Push), Outros Growth (Bing, Demand Gen, TikTok, Display, Mailer), SEM_Branded, SEM_NonBranded, Shopping, SMS e WhatsApp. Em Hoje e Ontem, pelos pedidos com último clique; no mês, pela planilha de canais.',
   inputs: ['pedidos_lc', 'canais_todos'],
   fn: (pedidos_lc, canais_todos) => {
-    const CAN = [['Facebook', 'Facebook', '#2a78d6'], ['Shopping', 'Shopping', '#eb6834'], ['SEM_Branded', 'SEM Branded', '#1baf7a'], ['SEM_NonBranded', 'SEM Non-branded', '#eda100'], ['Email', 'Email', '#e87ba4'], ['WhatsApp', 'WhatsApp', '#008300'], ['Criteo', 'Criteo', '#6250d6']];
-    const R = {}, OUT = {};
-    const add = (canal, v) => { if (!v) return; if (CAN.some((c) => c[0] === canal)) R[canal] = (R[canal] || 0) + v; else { const k = canal || 'Sem clique'; OUT[k] = (OUT[k] || 0) + v; } };
+    /* [grupo, cor, texto sobre a cor] na ordem da legenda */
+    const GR = [['Afiliados', '#4db6e5', '#270d0f'], ['AppPush', '#b23aa5', '#fff'], ['Criteo', '#b8d76b', '#270d0f'], ['Email', '#5b2ec4', '#fff'], ['Facebook', '#3d6fc8', '#fff'], ['Orgânico/Outros', '#bdbdbd', '#270d0f'], ['Outros CRM', '#ffd54a', '#270d0f'], ['Outros Growth', '#b23b3b', '#fff'], ['SEM_Branded', '#9a7cea', '#fff'], ['SEM_NonBranded', '#ee7a50', '#270d0f'], ['Shopping', '#6fd8d2', '#270d0f'], ['SMS', '#f8ab4e', '#270d0f'], ['WhatsApp', '#8fd0e6', '#270d0f']];
+    const DIRETO = ['Afiliados', 'AppPush', 'Criteo', 'Email', 'Facebook', 'SEM_Branded', 'SEM_NonBranded', 'Shopping', 'SMS', 'WhatsApp'];
+    const CRM = ['WebPush'], GROWTH = ['Bing', 'DemandGen', 'Tiktok', 'TikTok', 'Display', 'Mailer'];
+    const grupo = (c) => (DIRETO.includes(c) ? c : CRM.includes(c) ? 'Outros CRM' : GROWTH.includes(c) ? 'Outros Growth' : 'Orgânico/Outros');
+    const R = {}, INC = {};
+    const add = (canal, v) => { if (!v) return; const g = grupo(canal); R[g] = (R[g] || 0) + v; if (g !== canal) { const o = INC[g] || (INC[g] = {}); const k = canal || 'Sem clique'; o[k] = (o[k] || 0) + v; } };
     if (pedidos_lc.length) pedidos_lc.forEach((r) => add(r.canal, r.rec + r.frete));
-    else canais_todos.filter((r) => r.nivel === 'canal' || (r.nivel === 'grupo' && r.grupo === 'Outros')).forEach((r) => add(r.canal === 'TikTok' ? 'Tiktok' : r.canal, r.rec));
-    const outros = Object.values(OUT).reduce((s, v) => s + v, 0);
-    const tot = Object.values(R).reduce((s, v) => s + v, 0) + outros;
+    else canais_todos.filter((r) => r.nivel === 'canal' || (r.nivel === 'grupo' && r.grupo === 'Outros')).forEach((r) => add(r.canal, r.rec));
+    const tot = Object.values(R).reduce((s, v) => s + v, 0);
     if (!tot) return [];
-    const rows = CAN.filter((c) => R[c[0]]).map((c) => ({ canal: c[1], receita: R[c[0]], share: R[c[0]] / tot, cor: c[2], inclui: null }));
-    if (outros) rows.push({ canal: 'Outros', receita: outros, share: outros / tot, cor: '#b9a19b', inclui: 'Inclui: ' + Object.keys(OUT).sort((a, b) => OUT[b] - OUT[a]).join(', ') });
-    return rows;
+    return GR.map(([g, cor, txt], i) => { const o = INC[g]; return { canal: g, ordem: i, receita: R[g] || 0, share: (R[g] || 0) / tot, cor, txt, inclui: o ? 'Inclui: ' + Object.keys(o).sort((a, b) => o[b] - o[a]).join(', ') : null }; });
   },
 });
 

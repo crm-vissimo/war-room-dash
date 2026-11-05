@@ -70,8 +70,7 @@
 .wr .lg-canais li { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
 .wr .lg-canais .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
 .wr .nm { display: block; max-width: var(--namew, 15rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wr table.nm-full td:first-child { width: 100%; max-width: 0; min-width: 12rem; }
-.wr table.nm-full .nm { max-width: var(--namew, none); }
+.wr table.nm-full .nm { max-width: var(--namew, min(34rem, 45vw)); }
 .wr th .rz { position: absolute; right: 0; top: 0; bottom: 0; width: 8px; cursor: col-resize; border-right: 2px solid rgba(255,255,255,.35); }
 .wr th .rz:hover { border-right-color: var(--ev-salmon); }
 .wr td.t { text-align: left; white-space: normal; }
@@ -336,8 +335,8 @@ td .tp.vid { background: var(--ev-orange); }
     </div>
     <div class="card" id="share-canais">
       <h3>Share de receita por canal</h3>
-      <p class="cap c-dia">Receita last click de cada canal ÷ receita total do dia, pelos pedidos com último clique (pedido sem clique entra em Outros).</p>
-      <p class="cap c-mtd">Receita last click de cada canal ÷ receita total do período, da planilha de canais.</p>
+      <p class="cap c-dia">Receita last click de cada canal ÷ receita total do dia, pelos pedidos com último clique (pedido sem clique entra em Orgânico/Outros). Outros CRM = Web Push; Outros Growth = Bing, Demand Gen, TikTok, Display e Mailer.</p>
+      <p class="cap c-mtd">Receita last click de cada canal ÷ receita total do período, da planilha de canais. Outros CRM = Web Push; Outros Growth = Bing, Demand Gen, TikTok, Display e Mailer.</p>
       <div class="chart share-canais" data-draw="ch_share_canais" data-source="share_canais"></div>
     </div>
   </section>
@@ -994,11 +993,12 @@ dash.draw('ch_share_canais', (el) => {
     WR.placeTip(el, tip, mx, my);
   };
   let x0 = 2; const W = w - 4;
-  rows.forEach((r) => {
+  /* na barra, do maior para o menor; a legenda mantém a ordem fixa dos canais */
+  rows.slice().sort((a, b) => b.share - a.share).forEach((r) => {
     const bw = r.share * W; if (bw <= 0) return;
     svg.append('rect').attr('x', x0).attr('y', 2).attr('width', Math.max(0, bw - 2)).attr('height', bh).attr('rx', 4).attr('fill', r.cor)
       .on('mousemove', (ev) => show(ev, r)).on('mouseleave', () => tip.style('display', 'none'));
-    if (bw > 40) svg.append('text').attr('x', x0 + bw / 2).attr('y', 2 + bh / 2 + 5).attr('text-anchor', 'middle').text(WR.F.pct0(r.share)).attr('fill', /^#(eda100|1baf7a|e87ba4|b9a19b)$/.test(r.cor) ? '#270d0f' : '#fff').style('font-size', '13px').style('font-weight', 700).style('pointer-events', 'none');
+    if (bw > 40) svg.append('text').attr('x', x0 + bw / 2).attr('y', 2 + bh / 2 + 5).attr('text-anchor', 'middle').text(WR.F.pct0(r.share)).attr('fill', r.txt || '#fff').style('font-size', '13px').style('font-weight', 700).style('pointer-events', 'none');
     x0 += bw;
   });
   const lg = d3.select(el).append('ul').attr('class', 'lg-canais');
