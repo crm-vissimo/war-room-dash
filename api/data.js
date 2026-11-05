@@ -4,11 +4,25 @@
 const redshift = require('../lib/redshift-sources');
 const sheets = require('../lib/sheets-sources');
 const meta = require('../lib/meta-sources');
+const insider = require('../lib/insider-sources');
 
-const SOURCES = Object.assign({}, redshift, sheets, meta);
-/* CRM (Insider One): sem integração direta ainda — o bloco de CRM mostra "—" até ligarmos a API do Insider */
-['email_insider', 'email_insider_mes', 'whats_insider', 'whats_insider_mes', 'email_lista', 'email_c1', 'email_c2', 'email_c3', 'email_c4', 'email_c5']
-  .forEach((id) => { SOURCES[id] = async () => { throw new Error('Insider One ainda não está conectado nesta versão'); }; });
+const crypto = require('crypto');
+
+/* o middleware.js já barra quem não fez login; esta conferência repete a do cookie
+   para a API nunca ficar aberta se o middleware deixar de rodar */
+function logado(req) {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret || secret.length < 32) return false;
+  const m = /(?:^|;\s*)wr_session=([^;]+)/.exec(req.headers.cookie || '');
+  if (!m) return false;
+  const [body, sig] = decodeURIComponent(m[1]).split('.');
+  if (!body || !sig) return false;
+  const good = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+  if (good.length !== sig.length || !crypto.timingSafeEqual(Buffer.from(good), Buffer.from(sig))) return false;
+  try { return JSON.parse(Buffer.from(body, 'base64url').toString('utf8')).exp > Date.now(); } catch (e) { return false; }
+}
+
+const SOURCES = Object.assign({}, redshift, sheets, meta, insider);
 
 const DATE = /^20[0-9]{2}-[01][0-9]-[0-3][0-9]$/;
 const RULES = {
@@ -26,6 +40,7 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   const id = String(q.id || '');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  if (!logado(req)) { res.statusCode = 401; return res.end(JSON.stringify({ error: 'Faça login para ver os dados' })); }
   if (!SOURCES[id]) { res.statusCode = 404; return res.end(JSON.stringify({ error: 'Fonte desconhecida: ' + id })); }
   const p = {};
   for (const [k, v] of Object.entries(q)) {

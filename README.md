@@ -7,7 +7,7 @@ Dash de acompanhamento comercial, growth e CRM do e-commerce Evino, com abas **H
 ```
 public/        página estática (index.html, data.js, fonts.css, runtime.js)
 api/data.js    função serverless: GET /api/data?id=<fonte>&<parâmetros>
-lib/           acesso às fontes (Redshift, Google Sheets, Meta Ads)
+lib/           acesso às fontes (Redshift, Google Sheets, Meta Ads, Insider One)
 ```
 
 - `public/runtime.js` faz o papel do runtime de dashboards do Claude: busca cada fonte em `/api/data`, roda os cálculos de `data.js` e redesenha os blocos. Atualiza sozinho a cada 5 minutos com a aba aberta.
@@ -18,7 +18,7 @@ lib/           acesso às fontes (Redshift, Google Sheets, Meta Ads)
 | Redshift | vendas, pedidos, kits, hora a hora, faixas, canal × SKU, último clique | `lib/redshift-sources.js` |
 | Google Sheets | Monitoramento de Canais (receita LC, metas, investimento) e Plano de Vendas do mês | `lib/sheets-sources.js` |
 | Meta Ads (Marketing API) | gasto, impressões, cliques e compras por anúncio; série diária | `lib/meta-sources.js` |
-| Insider One | email e WhatsApp | **ainda não conectado**: o bloco de CRM mostra "—" |
+| Insider One (APIs de relatório) | resumo de e-mail e WhatsApp, campanhas de e-mail (envios e abertura) | `lib/insider-sources.js` |
 
 ### Tabelas do Redshift
 
@@ -47,7 +47,7 @@ GRANT SELECT ON dora_red_aggregations.vw_carga_ev_grupo_de_produto TO <usuário>
 GRANT SELECT ON dora_red_aggregations.vw_ev_dim_product_bundle TO <usuário>;
 ```
 
-**Fontes com erro:** se uma fonte falha (token da Meta vencido, planilha sem acesso, Insider ainda não ligado), cada bloco mostra o que der com as outras fontes e só exibe o erro quando não sobra nada para mostrar.
+**Fontes com erro:** se uma fonte falha (token da Meta vencido, planilha sem acesso, chave do Insider inválida), cada bloco mostra o que der com as outras fontes e só exibe o erro quando não sobra nada para mostrar.
 
 ## Conceitos de receita
 
@@ -62,8 +62,16 @@ GRANT SELECT ON dora_red_aggregations.vw_ev_dim_product_bundle TO <usuário>;
 
 1. Importe este repositório num projeto da Vercel (framework: **Other**, sem build command; a pasta `public` é servida como estática).
 2. Em **Settings → Environment Variables**, cadastre as variáveis de `.env.example`. Nunca faça commit dos valores.
-3. Em **Settings → Deployment Protection**, ligue a proteção (Vercel Authentication ou senha): o dash mostra receita e margem.
+3. Configure o login (abaixo). Sem as variáveis de login o dash fica fechado.
 4. Rede: o Redshift costuma aceitar só IPs liberados. As funções da Vercel saem por IPs variáveis; se a conexão der timeout, peça ao time de dados para liberar o acesso ou use o Secure Compute da Vercel (IP fixo).
+
+### Login
+
+Só entra quem fizer login com uma conta Google Workspace dos domínios liberados (padrão: `vissimo.com.br`, `evino.com.br` e `grandcru.com.br`; troque em `AUTH_ALLOWED_DOMAINS`). Contas pessoais do Google criadas com esses e-mails não entram. Quem controla o acesso é o `middleware.js`, que roda antes de qualquer página ou `/api`, e a `api/data.js` confere a sessão de novo. A sessão dura 7 dias, e o botão **Sair** fica no topo do dash.
+
+1. No Google Cloud (o mesmo projeto da conta de serviço serve), abra **APIs e serviços → Tela de consentimento OAuth** e escolha o tipo **Externo**, já que as empresas podem ser organizações diferentes no Google. Use só os escopos `openid`, `email` e `profile` e clique em **Publicar app**: em modo de teste só entram os usuários de teste.
+2. Em **Credenciais → Criar credenciais → ID do cliente OAuth → Aplicativo da Web**, cadastre o URI de redirecionamento `https://<domínio do dash>` (sem barra no final), um para cada domínio que for usar.
+3. Na Vercel, cadastre `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` e `AUTH_SECRET` (texto aleatório de 32+ caracteres) e faça um redeploy.
 
 ### Credenciais recomendadas
 

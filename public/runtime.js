@@ -10,7 +10,7 @@
     vendas_yoy: ['ini_yoy', 'fim_yoy'],
     pedidos_canal: ['ini', 'fim', 'pago_in'],
     pedidos_canal_yoy: ['ini_yoy', 'fim_yoy'],
-    google_lc: ['ini', 'fim'],
+    google_lc: ['ini', 'fim', 'pago_in'],
     kits: ['ini', 'fim', 'pago_in'],
     fact_dia: ['ini', 'fim', 'pago_in'],
     lc_dia: ['ini', 'fim'],
@@ -63,7 +63,8 @@
     const q = new URLSearchParams({ id });
     (SOURCES[id] || []).forEach((k) => q.set(k, P[k]));
     try {
-      const r = await fetch('/api/data?' + q.toString(), { headers: { accept: 'application/json' } });
+      const r = await fetch('/api/data?' + q.toString(), { headers: { accept: 'application/json' }, credentials: 'same-origin' });
+      if (r.status === 401) { location.reload(); return; } /* sessão expirou: volta para a tela de login */
       const j = await r.json().catch(() => ({ error: 'Resposta inválida (' + r.status + ')' }));
       if (!D[id] || D[id].seq !== seq) return;
       if (!r.ok || j.error) D[id] = { status: 'error', data: [], error: j.error || ('HTTP ' + r.status), key, seq };
