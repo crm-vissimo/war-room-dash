@@ -67,12 +67,14 @@
 .wr th:first-child { position: sticky; }
 .wr .share-canais { min-height: 0; }
 .wr .chart.fino { min-height: 0; }
-.wr .mtd-agora { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; padding: 10px 14px; border-radius: 12px; background: var(--ev-cream); border: 1px solid var(--ev-line); font-size: 13px; color: #7a4a46; }
-.wr .mtd-agora .lb { font-family: var(--f-ret); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ev-wine); }
-.wr .mtd-agora b { color: var(--ev-dark); font-weight: 700; }
-.wr .mtd-agora .atg b { font-size: 15px; }
-.wr .mtd-agora .atg b.up { color: var(--ev-good); } .wr .mtd-agora .atg b.warn { color: var(--ev-warn); } .wr .mtd-agora .atg b.down { color: var(--ev-bad); }
-.wr .mtd-agora .mm { margin-left: auto; }
+/* Hoje: o card do mês até agora fica abaixo do atingimento do dia, na mesma coluna e mais discreto (fundo claro, número menor) */
+.wr .atg-col { display: grid; gap: 10px; align-content: start; }
+.wr .atg-mini { border-radius: 14px; padding: 12px 14px; display: grid; gap: 2px; background: var(--ev-cream); border: 1px solid var(--ev-line); color: #7a4a46; }
+.wr .atg-mini .lb { font-family: var(--f-ret); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: 12px; color: var(--ev-wine); }
+.wr .atg-mini .big { font-family: var(--f-title); font-size: 30px; line-height: 1.05; color: var(--ev-dark); }
+.wr .atg-mini .big.up { color: var(--ev-good); } .wr .atg-mini .big.warn { color: var(--ev-warn); } .wr .atg-mini .big.down { color: var(--ev-bad); }
+.wr .atg-mini .s { font-size: 13px; }
+.wr .atg-mini .s b { color: var(--ev-dark); font-weight: 600; }
 .wr .lg-canais { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ev-dark); }
 .wr .lg-canais li { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
 .wr .lg-canais .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
@@ -260,6 +262,7 @@ td .tp.vid { background: var(--ev-orange); }
       <h3>Receita acumulada a cada 15 minutos</h3>
       <p class="cap">Real de hoje (boleto condition: boleto a 65% e PIX a 75%) contra o planejado (tracejado): meta last click do dia distribuída pela curva média a cada 15 minutos dos mesmos dias da semana nas 6 semanas anteriores. O atingimento vai até o minuto do pedido mais recente já carregado, com o planejado proporcional no bloco de 15 minutos em andamento.</p>
       <div class="hora-wrap">
+        <div class="atg-col">
         <div class="atg-box" data-fetchpriority="high">
           <span class="lb">Atingimento até <span data-draw="kv" data-source="hora_resumo" data-row="0" data-field="ate" data-fmt="txt">—</span></span>
           <span class="big" data-draw="kv" data-source="hora_resumo" data-row="0" data-field="ating_acum" data-fmt="atg" data-accent="atg">—</span>
@@ -267,15 +270,15 @@ td .tp.vid { background: var(--ev-orange); }
           <span class="s">planejado <b data-draw="kv" data-source="hora_resumo" data-row="0" data-field="plano_acum" data-fmt="brl">—</b></span>
           <span class="s">gap <b data-draw="kv" data-source="hora_resumo" data-row="0" data-field="gap" data-fmt="brlsg">—</b></span>
         </div>
+        <div class="atg-mini">
+          <span class="lb">Mês até <span data-draw="kv" data-source="mtd_agora" data-row="0" data-field="ate" data-fmt="txt">—</span></span>
+          <span class="big" data-draw="kv" data-source="mtd_agora" data-row="0" data-field="ating" data-fmt="atg">—</span>
+          <span class="s">real <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="real" data-fmt="brl">—</b></span>
+          <span class="s">planejado <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="planejado" data-fmt="brl">—</b></span>
+          <span class="s">gap <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="gap" data-fmt="brlsg">—</b></span>
+        </div>
+        </div>
         <div class="chart" data-draw="ch_hora" data-source="hora"></div>
-      </div>
-      <div class="mtd-agora">
-        <span class="lb">Mês até agora · até <span data-draw="kv" data-source="mtd_agora" data-row="0" data-field="ate" data-fmt="txt">—</span></span>
-        <span class="atg">ATG <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="ating" data-fmt="atg">—</b></span>
-        <span>real <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="real" data-fmt="brl">—</b></span>
-        <span>planejado <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="planejado" data-fmt="brl">—</b></span>
-        <span>gap <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="gap" data-fmt="brlsg">—</b></span>
-        <span class="mm">meta do mês <b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="meta_mes" data-fmt="brl">—</b> (<b data-draw="kv" data-source="mtd_agora" data-row="0" data-field="ating_mes" data-fmt="pct">—</b> feito)</span>
       </div>
     </div>
 
