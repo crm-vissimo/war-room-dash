@@ -25,14 +25,27 @@ lib/           acesso às fontes (Redshift, Google Sheets, Meta Ads, Insider One
 | Uso | Tabela padrão | Variável para trocar |
 |---|---|---|
 | Pedidos × item | `dora_red_aggregations.ev_fact_order_item` | `T_FACT_ORDER_ITEM` |
-| Último clique | `dora_red_aggregations.ev_last_click_full` | `T_LAST_CLICK` |
+| Último clique | `vissimo_bi.vw_ev_last_click_pedido` (reserva: `dora_red_aggregations.ev_last_click_full`) | `T_LAST_CLICK` (`T_LAST_CLICK_RAW`) |
 | Kits | `dora_red_aggregations.vw_ev_dim_product_bundle` | `T_DIM_BUNDLE` |
-| Grupo de produto (faixas) | `dora_red_aggregations.ev_grupo_de_produto` | `T_GRUPO_PRODUTO` |
+| Grupo de produto (faixas) | `dora_red_aggregations.vw_carga_ev_grupo_de_produto` (reserva: `dora_red_aggregations.ev_grupo_de_produto`) | `T_GRUPO_PRODUTO` (`T_GRUPO_PRODUTO_RAW`) |
 | Produto | `dora_red_aggregations.ev_dim_product` | `T_DIM_PRODUCT` |
 
-São as tabelas de origem das views do Dados Víssimo (registro do ETL). As colunas usadas são as mesmas das views; se alguma tiver outro nome no Redshift, o erro aparece na própria tela e nos logs da função.
+Last click e grupo de produto usam as mesmas views do dash no Claude, para os números baterem. As outras são as tabelas de origem das views do Dados Víssimo (registro do ETL), com as mesmas colunas; se alguma tiver outro nome no Redshift, o erro aparece na própria tela e nos logs da função.
 
-**Permissões:** o usuário do Redshift precisa de `SELECT` nessas tabelas. As views `vissimo_bi.*` e `vw_carga_*` exigem permissão extra, por isso o padrão usa as tabelas de origem. Sem permissão em `vw_ev_dim_product_bundle`, o dash continua funcionando, só sem nome e estoque dos kits (as outras tabelas de kits do Redshift pararam em 2023). Para liberar: `GRANT SELECT ON dora_red_aggregations.vw_ev_dim_product_bundle TO <usuário>;`
+**Permissões:** o usuário do Redshift precisa de `SELECT` nessas tabelas. As views de last click, grupo de produto e kits exigem permissão extra; sem ela, o dash não quebra:
+
+- **Last click:** usa `ev_last_click_full` desduplicada (uma linha por pedido, a de `updated_at` mais recente). A tabela crua repete o mesmo pedido em várias linhas; contada direto, infla pedidos por canal e o ticket.
+- **Grupo de produto:** usa `ev_grupo_de_produto` com só a carga mais recente (`data_carga`) de cada SKU.
+- **Kits:** os números saem iguais, só sem nome e estoque dos kits (as outras tabelas de kits do Redshift pararam em 2023).
+
+A view é tentada de novo a cada 10 minutos, e o log da função avisa quando a reserva entra. Para usar as views, peça ao time de dados:
+
+```sql
+GRANT USAGE ON SCHEMA vissimo_bi TO <usuário>;
+GRANT SELECT ON vissimo_bi.vw_ev_last_click_pedido TO <usuário>;
+GRANT SELECT ON dora_red_aggregations.vw_carga_ev_grupo_de_produto TO <usuário>;
+GRANT SELECT ON dora_red_aggregations.vw_ev_dim_product_bundle TO <usuário>;
+```
 
 **Fontes com erro:** se uma fonte falha (token da Meta vencido, planilha sem acesso, chave do Insider inválida), cada bloco mostra o que der com as outras fontes e só exibe o erro quando não sobra nada para mostrar.
 
@@ -40,6 +53,8 @@ São as tabelas de origem das views do Dados Víssimo (registro do ETL). As colu
 
 - **Ontem e Mês até ontem:** pedidos pagos (`is_paid = 1`), receita = `price_to_pay + item_shipping_amount`.
 - **Hoje:** boleto condition — pedidos solid (`is_solid = 1`, pagos ou não), sem SAC, televendas (cupom `TV*`), ItaúShop (pedido `BRI*`) e Vivino; receita, frete e CM2 de boleto a 65% e PIX a 75%. PMV sem o fator.
+- **Pedidos e ticket médio:** pedidos distintos da tabela de pedidos com o mesmo recorte da receita (igual ao Looker); o canal de cada pedido vem do último clique, e pedido sem clique entra em Orgânico/Outros. Ticket = receita (produto + frete) ÷ pedidos.
+- **Atingimento de Hoje:** a cada 15 minutos, até o fim do último bloco de 15 minutos fechado; o planejado segue a curva média dos mesmos dias da semana nas 6 semanas anteriores.
 - **Receita last click por canal, metas e investimento:** planilha Monitoramento de Canais.
 - **Plano por faixa:** arquivo "M-1 Plano de Vendas" do mês (aba Acompanhamento Categorias). Os IDs aceitos ficam em `SHEET_PLANOS` e no mapa `PLANO` de `public/index.html` — acrescente o de cada mês novo nos dois.
 

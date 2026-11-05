@@ -281,31 +281,36 @@ dash.calc('canais_dia', {
 });
 
 dash.calc('hora', {
-  title: 'Receita acumulada × planejado por hora',
-  description: 'Como o painel de hora a hora do Looker: pedidos solid (sem televendas TV*, sem SAC, sem ItaúShop BRI*, sem Vivino). Real = receita de hoje acumulada por hora com boleto a 65% e PIX a 75% (produto + frete). Planejado = meta last click do dia × curva média de receita acumulada por hora dos mesmos dias da semana nas 6 semanas anteriores.',
+  title: 'Receita acumulada × planejado a cada 15 minutos',
+  description: 'Como o painel de hora a hora do Looker: pedidos solid (sem televendas TV*, sem SAC, sem ItaúShop BRI*, sem Vivino). Real = receita de hoje acumulada a cada 15 minutos com boleto a 65% e PIX a 75% (produto + frete). Planejado = meta last click do dia × curva média de receita acumulada a cada 15 minutos dos mesmos dias da semana nas 6 semanas anteriores. O bloco de 15 minutos em andamento fica de fora, para real e planejado irem até o mesmo horário.',
   inputs: ['hora_a_hora', 'canais_diario'],
   fn: (hora_a_hora, canais_diario) => {
     if (!hora_a_hora.length) return [];
+    const Q = 96; /* blocos de 15 minutos no dia */
     const ok = (r) => !/^TV/i.test(String(r.voucher_code || '')) && String(r.payment_method || '') !== 'sac' && !/^BRI/.test(String(r.pedido || '')) && String(r.marketplace_provider || '') !== 'vivino';
     const fator = (pm) => (/boleto/i.test(pm || '') ? 0.65 : /pix/i.test(pm || '') ? 0.75 : 1);
+    const bloco = (ts) => { const t = String(ts); const h = +t.slice(11, 13), m = +t.slice(14, 16) || 0; return h >= 0 && h < 24 ? h * 4 + Math.floor(m / 15) : -1; };
+    const fimBloco = (q) => { const t = q * 15 + 14; return Math.floor(t / 60) + 'h' + String(t % 60).padStart(2, '0'); };
     const hoje = (hora_a_hora.find((r) => r.semanas_atras === 0) || {}).data;
     const meta = canais_diario.filter((r) => r.data === hoje && r.canal !== 'Total').reduce((s, r) => s + r.rec_plan, 0);
-    const real = Array(24).fill(0); let last = -1;
+    const real = Array(Q).fill(0); let last = -1;
     const hist = {};
     hora_a_hora.filter(ok).forEach((r) => {
-      const h = +String(r.ts).slice(11, 13); if (!(h >= 0 && h < 24)) return;
-      if (r.semanas_atras === 0) { real[h] += (r.rec + r.frete) * fator(r.payment_method); if (h > last) last = h; }
-      else { const o = hist[r.data] || (hist[r.data] = Array(24).fill(0)); o[h] += r.rec + r.frete; }
+      const q = bloco(r.ts); if (q < 0) return;
+      if (r.semanas_atras === 0) { real[q] += (r.rec + r.frete) * fator(r.payment_method); if (q > last) last = q; }
+      else { const o = hist[r.data] || (hist[r.data] = Array(Q).fill(0)); o[q] += r.rec + r.frete; }
     });
-    const curvas = Object.values(hist).map((v) => { const tot = v.reduce((a, b) => a + b, 0); let acc = 0; return tot ? v.map((x) => (acc += x) / tot) : null; }).filter(Boolean);
-    const share = Array.from({ length: 24 }, (_, h) => (curvas.length ? curvas.reduce((s, c) => s + c[h], 0) / curvas.length : null));
+    /* o bloco com o pedido mais recente ainda está em andamento: o acumulado vai até o bloco anterior */
+    const fechado = last - 1;
+    const curvas = Object.values(hist).map((v) => { const tot = v.reduce((x, y) => x + y, 0); let acc = 0; return tot ? v.map((x) => (acc += x) / tot) : null; }).filter(Boolean);
+    const share = Array.from({ length: Q }, (_, q) => (curvas.length ? curvas.reduce((s, c) => s + c[q], 0) / curvas.length : null));
     let acc = 0;
-    return real.map((v, h) => {
+    return real.map((v, q) => {
       acc += v;
-      const plan = share[h] != null && meta ? meta * share[h] : null;
-      const planPrev = h > 0 && share[h - 1] != null && meta ? meta * share[h - 1] : 0;
-      const ra = h <= last ? acc : null;
-      return { hora: h, real_hora: h <= last ? v : null, plano_hora: plan != null ? plan - planPrev : null, real_acum: ra, plano_acum: plan, ating_acum: ra != null && plan ? ra / plan : null, meta_dia: meta || null, semanas_base: curvas.length };
+      const plan = share[q] != null && meta ? meta * share[q] : null;
+      const planPrev = q > 0 && share[q - 1] != null && meta ? meta * share[q - 1] : 0;
+      const ra = q <= fechado ? acc : null;
+      return { bloco: q, hora: (q + 1) / 4, ate: fimBloco(q), real_bloco: q <= fechado ? v : null, plano_bloco: plan != null ? plan - planPrev : null, real_acum: ra, plano_acum: plan, ating_acum: ra != null && plan ? ra / plan : null, meta_dia: meta || null, semanas_base: curvas.length };
     });
   },
 });
@@ -550,13 +555,13 @@ dash.calc('google_camp', {
 });
 
 dash.calc('hora_resumo', {
-  title: 'Atingimento até a última hora',
-  description: 'Real e planejado acumulados até a última hora com pedidos hoje, atingimento (real ÷ planejado) e a diferença em reais.',
+  title: 'Atingimento até o último bloco de 15 minutos',
+  description: 'Real e planejado acumulados até o fim do último bloco de 15 minutos já fechado hoje, atingimento (real ÷ planejado) e a diferença em reais.',
   inputs: ['hora'],
   fn: (hora) => {
     const r = hora.filter((q) => q.real_acum != null).pop();
     if (!r) return [];
-    return [{ hora: r.hora, ate: r.hora + 'h59', real_acum: r.real_acum, plano_acum: r.plano_acum, ating_acum: r.ating_acum, gap: r.plano_acum != null ? r.real_acum - r.plano_acum : null }];
+    return [{ hora: r.hora, ate: r.ate, real_acum: r.real_acum, plano_acum: r.plano_acum, ating_acum: r.ating_acum, gap: r.plano_acum != null ? r.real_acum - r.plano_acum : null }];
   },
 });
 
