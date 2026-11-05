@@ -230,7 +230,7 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="tile c-mtd" data-fetchpriority="high"><span class="lb">Receita last click</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="receita" data-fmt="brl">—</span><span class="s">meta <span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="meta" data-fmt="brl">—</span></span></div>
       <div class="tile c-ontem"><span class="lb">Atingimento da meta</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="ating" data-fmt="atg" data-accent="atg">—</span><span class="s"><span data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="var_yoy" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile c-mtd"><span class="lb">Atingimento da meta</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="ating" data-fmt="atg" data-accent="atg">—</span><span class="s"><span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="var_yoy" data-fmt="delta">—</span> YoY</span></div>
-      <div class="tile"><span class="lb">Pedidos (last click)</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="pedidos" data-fmt="int">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_pedidos" data-fmt="delta">—</span> YoY</span></div>
+      <div class="tile"><span class="lb">Pedidos</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="pedidos" data-fmt="int">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_pedidos" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">Ticket médio</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="ticket" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_ticket" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">Garrafas vendidas</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="garrafas" data-fmt="int">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_garrafas" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">PMV (por garrafa)</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="pmv" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_pmv" data-fmt="delta">—</span> YoY</span></div>
@@ -242,8 +242,8 @@ td .tp.vid { background: var(--ev-orange); }
     </div>
 
     <div class="c-hoje card" id="hora">
-      <h3>Receita acumulada hora a hora</h3>
-      <p class="cap">Real de hoje (boleto condition: boleto a 65% e PIX a 75%) contra o planejado (tracejado): meta last click do dia distribuída pela curva média por hora dos mesmos dias da semana nas 6 semanas anteriores.</p>
+      <h3>Receita acumulada a cada 15 minutos</h3>
+      <p class="cap">Real de hoje (boleto condition: boleto a 65% e PIX a 75%) contra o planejado (tracejado): meta last click do dia distribuída pela curva média a cada 15 minutos dos mesmos dias da semana nas 6 semanas anteriores. O atingimento vai até o fim do último bloco de 15 minutos fechado.</p>
       <div class="hora-wrap">
         <div class="atg-box" data-fetchpriority="high">
           <span class="lb">Atingimento até <span data-draw="kv" data-source="hora_resumo" data-row="0" data-field="ate" data-fmt="txt">—</span></span>
@@ -848,7 +848,7 @@ dash.draw('ch_hora', (el) => {
   const max = d3.max(rows, (r) => Math.max(r.real_acum || 0, r.plano_acum || 0)) || 1;
   const y = d3.scaleLinear([0, max * 1.08], [h - 24, 10]).nice();
   const ml = WR.leftMargin(svg, y.ticks(4).map(WR.F.brl));
-  const x = d3.scaleLinear([0, 23], [ml, w - 96]);
+  const x = d3.scaleLinear([0, 24], [ml, w - 96]);
   const ga = svg.append('g').attr('transform', `translate(${ml},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(WR.F.brl).tickSize(-(w - 96 - ml)));
   WR.styleAxis(ga); ga.select('.domain').remove();
   const gx = svg.append('g').attr('transform', `translate(0,${h - 24})`).call(d3.axisBottom(x).ticks(Math.min(12, Math.floor(w / 60))).tickFormat((v) => v + 'h'));
@@ -865,16 +865,16 @@ dash.draw('ch_hora', (el) => {
   svg.append('rect').attr('x', ml).attr('y', 0).attr('width', w - 96 - ml).attr('height', h - 24).attr('fill', 'transparent')
     .on('mousemove', (ev) => {
       const [mx, my] = d3.pointer(ev);
-      const hr = Math.max(0, Math.min(23, Math.round(x.invert(mx))));
-      const r = rows.find((q) => q.hora === hr);
+      const qb = Math.max(0, Math.min(95, Math.round(x.invert(mx) * 4) - 1));
+      const r = rows.find((q) => q.bloco === qb);
       if (!r) return;
       tip.style('display', null).html('');
-      tip.append('div').attr('class', 'd').text('Até ' + hr + 'h59');
+      tip.append('div').attr('class', 'd').text('Até ' + r.ate);
       tip.append('div').text('Real acumulado: ' + WR.F.brl(r.real_acum));
       tip.append('div').text('Planejado acumulado: ' + WR.F.brl(r.plano_acum));
       tip.append('div').text('Atingimento: ' + WR.F.atg(r.ating_acum));
-      tip.append('div').text('Na hora: ' + WR.F.brl(r.real_hora) + ' de ' + WR.F.brl(r.plano_hora));
-      if (r.real_acum != null) dot.style('display', null).attr('cx', x(hr)).attr('cy', y(r.real_acum)); else dot.style('display', 'none');
+      tip.append('div').text('Nesses 15 min: ' + WR.F.brl(r.real_bloco) + ' de ' + WR.F.brl(r.plano_bloco));
+      if (r.real_acum != null) dot.style('display', null).attr('cx', x(r.hora)).attr('cy', y(r.real_acum)); else dot.style('display', 'none');
       WR.placeTip(el, tip, mx * (el.clientWidth / w), my * (el.clientWidth / w));
     })
     .on('mouseleave', () => { tip.style('display', 'none'); dot.style('display', 'none'); });
