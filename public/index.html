@@ -563,15 +563,13 @@ td .tp.vid { background: var(--ev-orange); }
     document.querySelectorAll('.wr .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === p)));
     const show = { 'c-dia': p !== 'mtd', 'c-mtd': p === 'mtd', 'c-hoje': p === 'hoje', 'c-ontem': p === 'ontem', 'c-nohoje': p !== 'hoje' };
     Object.keys(show).forEach((c) => document.querySelectorAll('.wr .' + c).forEach((el) => { el.hidden = !show[c]; }));
-    /* ids das 5 campanhas de email com mais receita LC, para buscar enviados e open rate no Insider */
-    if (p !== 'mtd') {
-      const ce = dash.data('camp_email');
-      if (ce.status === 'ok') {
-        const ids = ce.data.map((r) => r.campaign_id).filter(Boolean).map(String);
-        const cur = dash.params(), upd = {};
-        for (let k = 1; k <= 5; k++) { const id = ids[k - 1]; if (id && cur['email_id_' + k] !== id) upd['email_id_' + k] = id; }
-        if (Object.keys(upd).length) dash.setParams(upd);
-      }
+    /* ids das 5 campanhas de email com mais receita LC, para buscar enviados e open rate no Insider (nas três abas) */
+    const ce = dash.data('camp_email');
+    if (ce.status === 'ok') {
+      const ids = ce.data.map((r) => r.campaign_id).filter(Boolean).map(String);
+      const cur = dash.params(), upd = {};
+      for (let k = 1; k <= 5; k++) { const id = ids[k - 1]; if (id && cur['email_id_' + k] !== id) upd['email_id_' + k] = id; }
+      if (Object.keys(upd).length) dash.setParams(upd);
     }
   });
   const named = location.hash && document.getElementById(location.hash.slice(1));

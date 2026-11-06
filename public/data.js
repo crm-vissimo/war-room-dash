@@ -820,12 +820,33 @@ dash.calc('plano_gap', {
 
 dash.calc('fb_campanhas', {
   title: 'Melhores campanhas do Facebook',
-  description: 'Receita (produto + frete), pedidos e novos clientes dos pedidos pagos com último clique no Facebook por utm_campaign, com o gasto da campanha de mesmo nome no Meta Ads e ROAS = receita ÷ gasto; as 10 de maior receita.',
+  description: 'Receita (produto + frete), pedidos e novos clientes dos pedidos pagos com último clique no Facebook por utm_campaign, com o gasto no Meta Ads do grupo de anúncios de mesmo nome (o utm_campaign dos links é o nome do conjunto; sem conjunto com esse nome, a campanha de mesmo nome) e ROAS = receita ÷ gasto; as 10 de maior receita. Nomes comparados sem maiúsculas, espaços e sinais. utm_campaign que vem com o id numérico do conjunto ou da campanha entra na linha do conjunto (ou da campanha, se ela tiver mais de um conjunto com gasto), sem repetir o gasto.',
   inputs: ['pedidos_lc', 'meta_ads', 'lc_agg'],
   fn: (pedidos_lc, meta_ads, lc_agg) => {
-    const G = {}; meta_ads.forEach((r) => { const k = String(r.campanha || '').toLowerCase(); G[k] = (G[k] || 0) + r.gasto; });
-    const C = fbBase(pedidos_lc, lc_agg).camp;
-    return Object.keys(C).map((k) => { const o = C[k], g = G[k.toLowerCase()] || null; return { campanha: k, canal: 'Facebook', gasto: g, receita: o.receita, roas: g ? o.receita / g : null, pedidos: o.pedidos, novos: o.novos }; }).sort((a, b) => b.receita - a.receita).slice(0, 10);
+    const nk = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const GS = {}, GC = {}, NOME = {}, porId = {}, conjDaCamp = {};
+    meta_ads.forEach((r) => {
+      const s = nk(r.conjunto), c = nk(r.campanha);
+      if (s) { GS[s] = (GS[s] || 0) + r.gasto; NOME[s] = r.conjunto; }
+      if (c) { GC[c] = (GC[c] || 0) + r.gasto; NOME[c] = NOME[c] || r.campanha; }
+      if (r.conjunto_id && r.conjunto) porId[r.conjunto_id] = r.conjunto;
+      if (r.campanha_id && r.campanha) { const o = conjDaCamp[r.campanha_id] || (conjDaCamp[r.campanha_id] = { nome: r.campanha, conj: new Set() }); if (r.conjunto && r.gasto > 0) o.conj.add(r.conjunto); }
+    });
+    /* utm_campaign com id numérico: vira o nome do conjunto (ou da campanha; se a campanha tem um conjunto só com gasto, o dele) */
+    const nomeDe = (k) => {
+      if (!/^\d+$/.test(k)) return k;
+      if (porId[k]) return porId[k];
+      const c = conjDaCamp[k]; if (!c) return k;
+      return c.conj.size === 1 ? [...c.conj][0] : c.nome;
+    };
+    const gasto = (k) => { const n = nk(k); return GS[n] != null ? GS[n] : GC[n] != null ? GC[n] : null; };
+    const base = fbBase(pedidos_lc, lc_agg).camp, C = {};
+    /* junta as linhas que caem no mesmo conjunto (o nome e o id dele), sem diferenciar maiúsculas */
+    Object.keys(base).forEach((k) => {
+      const nome = nomeDe(k), n = nk(nome) || nome, o = C[n] || (C[n] = { campanha: NOME[n] || nome, receita: 0, pedidos: 0, novos: 0 });
+      o.receita += base[k].receita; o.pedidos += base[k].pedidos; o.novos += base[k].novos;
+    });
+    return Object.values(C).map((o) => { const g = gasto(o.campanha) || null; return { campanha: o.campanha, canal: 'Facebook', gasto: g, receita: o.receita, roas: g ? o.receita / g : null, pedidos: o.pedidos, novos: o.novos }; }).sort((a, b) => b.receita - a.receita).slice(0, 10);
   },
 });
 
