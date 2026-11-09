@@ -213,6 +213,26 @@ dash.calc('kpis', {
   },
 });
 
+/* Super Meta do mês (só o card extra de Mês até ontem; não entra em nenhum outro cálculo). A meta de cada dia da planilha
+   sobe na mesma proporção até o mês somar o valor da Super Meta. */
+const SUPER_META = { '2026-11': 46e6 };
+dash.calc('super_meta', {
+  title: 'Atingimento da Super Meta',
+  description: 'Super Meta do mês (R$ 46 mi em novembro/2026) distribuída pelos dias na mesma proporção da meta last click da planilha (meta do dia × Super Meta ÷ meta do mês); atingimento = receita last click do período ÷ Super Meta das mesmas datas. É só uma visualização: nenhum outro indicador usa a Super Meta.',
+  inputs: ['canais_diario', 'canais', 'vendas'],
+  fn: (canais_diario, canais, vendas) => {
+    if (!vendas.length || !canais_diario.length) return [];
+    const ini = vendas[0].ini, fim = vendas[0].fim, mes = ini.slice(0, 7), sm = SUPER_META[mes];
+    if (!sm) return [];
+    let metaMes = 0, metaPer = 0;
+    canais_diario.forEach((r) => { if (r.canal === 'Total' || r.data.slice(0, 7) !== mes) return; metaMes += r.rec_plan; if (r.data >= ini && r.data <= fim) metaPer += r.rec_plan; });
+    const tot = canais.find((r) => r.canal === 'Total');
+    if (!metaMes || !tot) return [];
+    const fator = sm / metaMes, alvo = metaPer * fator;
+    return [{ super_meta_mes: sm, super_meta_periodo: alvo, receita: tot.receita, ating: alvo ? tot.receita / alvo : null, gap: tot.receita - alvo, fator }];
+  },
+});
+
 dash.calc('canais', {
   title: 'Canais no período (planilha)',
   description: 'Receita last click, meta, investimento e ROAS por canal somados da planilha de canais nas datas do período; YoY nas datas do ano anterior; pedidos do last click.',
