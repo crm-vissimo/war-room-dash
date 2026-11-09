@@ -197,6 +197,11 @@ td .tp.vid { background: var(--ev-orange); }
 /* cores de status */
 .wr .tile { border-top: 5px solid transparent; }
 .wr .tile.acc-up { border-top-color: var(--ev-good); background: #f1f8f4; }
+/* Super Meta (só em Mês até ontem): roxo, para não confundir com o atingimento da meta */
+.wr .tile.super { border-top-color: #5b2ec4; background: #f3effc; }
+.wr .tile.super .lb { color: #5b2ec4; }
+.wr .tile.super .v { color: #3a1d85; }
+.wr .tile.super .s b { color: #3a1d85; font-weight: 600; }
 .wr .tile.acc-warn { border-top-color: #f5c42e; background: #fffaf0; }
 .wr .tile.acc-down { border-top-color: var(--ev-red); background: #fff1f1; }
 .wr .hora-wrap { display: grid; grid-template-columns: minmax(10.5rem, 13rem) 1fr; gap: 16px; align-items: stretch; }
@@ -250,6 +255,7 @@ td .tp.vid { background: var(--ev-orange); }
     <div class="sec-h"><h2><span class="par">(</span> Comercial <span class="par">)</span></h2><p class="cap">E-commerce Evino (Magento). Em Hoje, boleto condition: pedidos solid com boleto a 65% e PIX a 75%; em Ontem e no mês, pedidos pagos.</p></div>
     <div class="tiles">
       <div class="tile c-dia" data-fetchpriority="high"><span class="lb">Receita last click</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="receita" data-fmt="brl">—</span><span class="s">meta do dia <span data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="meta" data-fmt="brl">—</span></span></div>
+      <div class="tile c-mtd super"><span class="lb">★ Super Meta</span><span class="v" data-draw="kv" data-source="super_meta" data-row="0" data-field="ating" data-fmt="atg">—</span><span class="s">até ontem <b data-draw="kv" data-source="super_meta" data-row="0" data-field="super_meta_periodo" data-fmt="brl">—</b> · mês <b data-draw="kv" data-source="super_meta" data-row="0" data-field="super_meta_mes" data-fmt="brl">—</b></span></div>
       <div class="tile c-mtd" data-fetchpriority="high"><span class="lb">Receita last click</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="receita" data-fmt="brl">—</span><span class="s">meta <span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="meta" data-fmt="brl">—</span></span></div>
       <div class="tile c-ontem"><span class="lb">Atingimento da meta</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="ating" data-fmt="atg" data-accent="atg">—</span><span class="s"><span data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="var_yoy" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile c-mtd"><span class="lb">Atingimento da meta</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="ating" data-fmt="atg" data-accent="atg">—</span><span class="s"><span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="var_yoy" data-fmt="delta">—</span> YoY</span></div>
@@ -257,6 +263,7 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="tile"><span class="lb">Ticket médio</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="ticket" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_ticket" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">Garrafas vendidas</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="garrafas" data-fmt="int">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_garrafas" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">PMV (por garrafa)</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="pmv" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_pmv" data-fmt="delta">—</span> YoY</span></div>
+      <div class="tile"><span class="lb">Frete por garrafa</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="frete_gf" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_frete_gf" data-fmt="delta">—</span> YoY</span><span class="s c-hoje">receita de frete ÷ garrafas</span></div>
       <div class="tile"><span class="lb">CM2 %</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="cm2_pct" data-fmt="cm2" data-accent="cm2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_cm2_pp" data-fmt="pp">—</span> YoY</span></div>
       <div class="tile c-nohoje"><span class="lb">Investimento (Growth + Outros)</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest_plan" data-fmt="brl">—</span> · <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="var_invest_yoy" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile c-nohoje"><span class="lb">Atingimento do investimento</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="ating_invest" data-fmt="atginv" data-accent="atginv">—</span><span class="s">investimento ÷ plano · verde até 100%, amarelo até 110%</span></div>

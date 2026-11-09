@@ -190,11 +190,11 @@ dash.loader('meta_diario', {
 
 dash.calc('kpis', {
   title: 'Indicadores comerciais',
-  description: 'Receita (produto + frete), pedidos last click, ticket, garrafas, PMV e CM2 % do período e do ano anterior.',
+  description: 'Receita (produto + frete), pedidos last click, ticket, garrafas, PMV, frete por garrafa (soma do item_shipping_amount de todos os itens ÷ garrafas, sem o fator de boleto/PIX, como o PMV) e CM2 % do período e do ano anterior.',
   inputs: ['vendas', 'vendas_yoy', 'pedidos_canal', 'pedidos_canal_yoy'],
   fn: (vendas, vendas_yoy, pedidos_canal, pedidos_canal_yoy) => {
     if (!vendas.length) return [];
-    const agg = (rows) => { let rec = 0, frete = 0, cm2 = 0, garrafas = 0, recG = 0; rows.forEach((r) => { rec += r.rec; frete += r.frete; cm2 += r.cm2; if (+r.is_bottle === 1) { garrafas += r.qtd; recG += r.rec_raw != null ? r.rec_raw : r.rec; } }); const tot = rec + frete; return { tot, cm2pct: tot ? cm2 / tot : null, garrafas, pmv: garrafas ? recG / garrafas : null }; };
+    const agg = (rows) => { let rec = 0, frete = 0, freteRaw = 0, cm2 = 0, garrafas = 0, recG = 0; rows.forEach((r) => { rec += r.rec; frete += r.frete; freteRaw += r.frete_raw != null ? r.frete_raw : r.frete; cm2 += r.cm2; if (+r.is_bottle === 1) { garrafas += r.qtd; recG += r.rec_raw != null ? r.rec_raw : r.rec; } }); const tot = rec + frete; return { tot, cm2pct: tot ? cm2 / tot : null, garrafas, pmv: garrafas ? recG / garrafas : null, frete_gf: garrafas ? freteRaw / garrafas : null }; };
     const a = agg(vendas), b = agg(vendas_yoy);
     /* sem a fonte de last click, pedidos e ticket ficam "—" em vez de zero */
     const ped = pedidos_canal.length ? pedidos_canal.reduce((s, r) => s + r.n, 0) : null, pedY = pedidos_canal_yoy.length ? pedidos_canal_yoy.reduce((s, r) => s + r.n, 0) : null;
@@ -207,8 +207,29 @@ dash.calc('kpis', {
       ticket: tk, ticket_yoy: tkY, var_ticket: ch(tk, tkY),
       garrafas: a.garrafas, garrafas_yoy: b.garrafas, var_garrafas: ch(a.garrafas, b.garrafas),
       pmv: a.pmv, pmv_yoy: b.pmv, var_pmv: ch(a.pmv, b.pmv),
+      frete_gf: a.frete_gf, frete_gf_yoy: b.frete_gf, var_frete_gf: ch(a.frete_gf, b.frete_gf),
       cm2_pct: a.cm2pct, cm2_pct_yoy: b.cm2pct, var_cm2_pp: a.cm2pct != null && b.cm2pct != null ? a.cm2pct - b.cm2pct : null,
     }];
+  },
+});
+
+/* Super Meta do mês (só o card extra de Mês até ontem; não entra em nenhum outro cálculo). A meta de cada dia da planilha
+   sobe na mesma proporção até o mês somar o valor da Super Meta. */
+const SUPER_META = { '2026-11': 46e6 };
+dash.calc('super_meta', {
+  title: 'Atingimento da Super Meta',
+  description: 'Super Meta do mês (R$ 46 mi em novembro/2026) distribuída pelos dias na mesma proporção da meta last click da planilha (meta do dia × Super Meta ÷ meta do mês); atingimento = receita last click do período ÷ Super Meta das mesmas datas. É só uma visualização: nenhum outro indicador usa a Super Meta.',
+  inputs: ['canais_diario', 'canais', 'vendas'],
+  fn: (canais_diario, canais, vendas) => {
+    if (!vendas.length || !canais_diario.length) return [];
+    const ini = vendas[0].ini, fim = vendas[0].fim, mes = ini.slice(0, 7), sm = SUPER_META[mes];
+    if (!sm) return [];
+    let metaMes = 0, metaPer = 0;
+    canais_diario.forEach((r) => { if (r.canal === 'Total' || r.data.slice(0, 7) !== mes) return; metaMes += r.rec_plan; if (r.data >= ini && r.data <= fim) metaPer += r.rec_plan; });
+    const tot = canais.find((r) => r.canal === 'Total');
+    if (!metaMes || !tot) return [];
+    const fator = sm / metaMes, alvo = metaPer * fator;
+    return [{ super_meta_mes: sm, super_meta_periodo: alvo, receita: tot.receita, ating: alvo ? tot.receita / alvo : null, gap: tot.receita - alvo, fator }];
   },
 });
 
