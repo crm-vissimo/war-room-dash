@@ -190,11 +190,11 @@ dash.loader('meta_diario', {
 
 dash.calc('kpis', {
   title: 'Indicadores comerciais',
-  description: 'Receita (produto + frete), pedidos last click, ticket, garrafas, PMV e CM2 % do período e do ano anterior.',
+  description: 'Receita (produto + frete), pedidos last click, ticket, garrafas, PMV, frete por garrafa (soma do item_shipping_amount de todos os itens ÷ garrafas, sem o fator de boleto/PIX, como o PMV) e CM2 % do período e do ano anterior.',
   inputs: ['vendas', 'vendas_yoy', 'pedidos_canal', 'pedidos_canal_yoy'],
   fn: (vendas, vendas_yoy, pedidos_canal, pedidos_canal_yoy) => {
     if (!vendas.length) return [];
-    const agg = (rows) => { let rec = 0, frete = 0, cm2 = 0, garrafas = 0, recG = 0; rows.forEach((r) => { rec += r.rec; frete += r.frete; cm2 += r.cm2; if (+r.is_bottle === 1) { garrafas += r.qtd; recG += r.rec_raw != null ? r.rec_raw : r.rec; } }); const tot = rec + frete; return { tot, cm2pct: tot ? cm2 / tot : null, garrafas, pmv: garrafas ? recG / garrafas : null }; };
+    const agg = (rows) => { let rec = 0, frete = 0, freteRaw = 0, cm2 = 0, garrafas = 0, recG = 0; rows.forEach((r) => { rec += r.rec; frete += r.frete; freteRaw += r.frete_raw != null ? r.frete_raw : r.frete; cm2 += r.cm2; if (+r.is_bottle === 1) { garrafas += r.qtd; recG += r.rec_raw != null ? r.rec_raw : r.rec; } }); const tot = rec + frete; return { tot, cm2pct: tot ? cm2 / tot : null, garrafas, pmv: garrafas ? recG / garrafas : null, frete_gf: garrafas ? freteRaw / garrafas : null }; };
     const a = agg(vendas), b = agg(vendas_yoy);
     /* sem a fonte de last click, pedidos e ticket ficam "—" em vez de zero */
     const ped = pedidos_canal.length ? pedidos_canal.reduce((s, r) => s + r.n, 0) : null, pedY = pedidos_canal_yoy.length ? pedidos_canal_yoy.reduce((s, r) => s + r.n, 0) : null;
@@ -207,6 +207,7 @@ dash.calc('kpis', {
       ticket: tk, ticket_yoy: tkY, var_ticket: ch(tk, tkY),
       garrafas: a.garrafas, garrafas_yoy: b.garrafas, var_garrafas: ch(a.garrafas, b.garrafas),
       pmv: a.pmv, pmv_yoy: b.pmv, var_pmv: ch(a.pmv, b.pmv),
+      frete_gf: a.frete_gf, frete_gf_yoy: b.frete_gf, var_frete_gf: ch(a.frete_gf, b.frete_gf),
       cm2_pct: a.cm2pct, cm2_pct_yoy: b.cm2pct, var_cm2_pp: a.cm2pct != null && b.cm2pct != null ? a.cm2pct - b.cm2pct : null,
     }];
   },
