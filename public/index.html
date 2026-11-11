@@ -556,11 +556,12 @@ td .tp.vid { background: var(--ev-orange); }
     const ontem = shift(hoje, -1);
     const mtdIni = hoje.slice(0, 8) + '01';
     const mtdFim = ontem < mtdIni ? hoje : ontem;
-    const PLANO = { '2026-10': '1JcYd-hi0CbZjB3BntL8n-VPH1ZVQZEtn4Prc50XB5cA', '2026-11': '1Gq9dh7KfKH2OXOH3wtwjsbD66J0n_In4BAYtv6nD2nM' };
+    /* mês do Plano de Vendas: o servidor acha a planilha 'MM. M-1 Plano de Vendas MmmAA' nas pastas do Drive */
+    const planoMes = (p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7);
     const base = { periodo: p, pago_in: p === 'hoje' ? '(0,1)' : '(1)', hoje, sem_passada: shift(hoje, -7), mtd_ini: mtdIni, mtd_fim: mtdFim, ini_email: shift(p === 'ontem' ? ontem : p === 'mtd' ? mtdIni : hoje, -3) };
-    if (p === 'ontem') return Object.assign(base, { ini: ontem, fim: ontem, ini_yoy: minusYear(ontem), fim_yoy: minusYear(ontem), meta_preset: 'yesterday', plano_id: PLANO[(p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7)] || PLANO['2026-11'] });
-    if (p === 'mtd') return Object.assign(base, { ini: mtdIni, fim: mtdFim, ini_yoy: minusYear(mtdIni), fim_yoy: minusYear(mtdFim), meta_preset: 'this_month', plano_id: PLANO[(p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7)] || PLANO['2026-11'] });
-    return Object.assign(base, { ini: hoje, fim: hoje, ini_yoy: minusYear(hoje), fim_yoy: minusYear(hoje), meta_preset: 'today', plano_id: PLANO[(p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7)] || PLANO['2026-11'] });
+    if (p === 'ontem') return Object.assign(base, { ini: ontem, fim: ontem, ini_yoy: minusYear(ontem), fim_yoy: minusYear(ontem), meta_preset: 'yesterday', plano_mes: planoMes });
+    if (p === 'mtd') return Object.assign(base, { ini: mtdIni, fim: mtdFim, ini_yoy: minusYear(mtdIni), fim_yoy: minusYear(mtdFim), meta_preset: 'this_month', plano_mes: planoMes });
+    return Object.assign(base, { ini: hoje, fim: hoje, ini_yoy: minusYear(hoje), fim_yoy: minusYear(hoje), meta_preset: 'today', plano_mes: planoMes });
   }
   window.WR_janela = janela;
   dash.setParams(janela(dash.params().periodo || 'hoje'));

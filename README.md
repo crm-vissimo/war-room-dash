@@ -56,7 +56,7 @@ GRANT SELECT ON dora_red_aggregations.vw_ev_dim_product_bundle TO <usuário>;
 - **Pedidos e ticket médio:** pedidos distintos da tabela de pedidos com o mesmo recorte da receita (igual ao Looker); o canal de cada pedido vem do último clique, e pedido sem clique entra em Orgânico/Outros. Ticket = receita (produto + frete) ÷ pedidos.
 - **Atingimento de Hoje:** até o minuto do pedido mais recente já carregado no Redshift (a tabela de pedidos chega com uns 20 a 35 minutos de atraso); no bloco de 15 minutos em andamento, o planejado entra na proporção dos minutos já passados. O planejado segue a curva média dos mesmos dias da semana nas 6 semanas anteriores.
 - **Receita last click por canal, metas e investimento:** planilha Monitoramento de Canais.
-- **Plano por faixa:** arquivo "M-1 Plano de Vendas" do mês (aba Acompanhamento Categorias). Os IDs aceitos ficam em `SHEET_PLANOS` e no mapa `PLANO` de `public/index.html` — acrescente o de cada mês novo nos dois.
+- **Plano por faixa:** arquivo "M-1 Plano de Vendas" do mês (aba Acompanhamento Categorias). O servidor procura sozinho, nas pastas do Drive de 2026 e 2027 (`PLANO_PASTAS`), o arquivo com o nome padrão do mês, por exemplo "12. M-1 Plano de Vendas Dez26". Cópias com outro nome ("…_2", "…_V_Lays") não entram; com dois arquivos de mesmo nome, vale o editado por último. Para isso, as pastas precisam estar compartilhadas (leitor) com a conta de serviço e a API do Google Drive ligada no projeto dela. Se o Drive não responder, valem os arquivos de outubro e novembro/2026 já conhecidos.
 
 ## Publicar na Vercel
 
