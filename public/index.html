@@ -570,6 +570,9 @@ td .tp.vid { background: var(--ev-orange); }
     document.querySelectorAll('.wr .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === p)));
     const show = { 'c-dia': p !== 'mtd', 'c-mtd': p === 'mtd', 'c-hoje': p === 'hoje', 'c-ontem': p === 'ontem', 'c-nohoje': p !== 'hoje' };
     Object.keys(show).forEach((c) => document.querySelectorAll('.wr .' + c).forEach((el) => { el.hidden = !show[c]; }));
+    /* Super Meta: o card só aparece no mês que tem Super Meta cadastrada (SUPER_META em data.js) */
+    const sm = dash.data('super_meta');
+    document.querySelectorAll('.wr .tile.super').forEach((el) => { if (sm.status === 'ok' && !sm.data.length) el.hidden = true; });
     /* ids das 5 campanhas de email com mais receita LC, para buscar enviados e open rate no Insider (nas três abas) */
     const ce = dash.data('camp_email');
     if (ce.status === 'ok') {
