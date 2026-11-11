@@ -268,7 +268,7 @@ dash.calc('pedidos_lc', {
 
 dash.calc('canais_dia', {
   title: 'Canais no dia (ao vivo)',
-  description: 'Receita e pedidos por canal dos pedidos pagos do dia pelo último clique; meta e investimento da planilha, investimento do Facebook do Meta Ads (sem Clube e Installs); YoY da planilha no mesmo dia da semana do ano passado.',
+  description: 'Receita e pedidos por canal dos pedidos pagos do dia pelo último clique; meta e investimento da planilha, investimento do Facebook do Meta Ads (sem Clube e Installs); YoY da planilha na mesma data do ano passado.',
   inputs: ['pedidos_lc', 'canais_diario', 'vendas', 'vendas_yoy', 'meta_ads'],
   fn: (pedidos_lc, canais_diario, vendas, vendas_yoy, meta_ads) => {
     if (!vendas.length || !pedidos_lc.length) return [];
