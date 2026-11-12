@@ -28,7 +28,7 @@ const DATE = /^20[0-9]{2}-[01][0-9]-[0-3][0-9]$/;
 const RULES = {
   ini: DATE, fim: DATE, ini_yoy: DATE, fim_yoy: DATE, hoje: DATE, mtd_ini: DATE, mtd_fim: DATE, ini_email: DATE,
   pago_in: /^\((0,1|1)\)$/,
-  plano_id: /^[A-Za-z0-9_-]{20,80}$/,
+  plano_mes: /^20[0-9]{2}-(0[1-9]|1[0-2])$/,
   meta_preset: /^(today|yesterday|this_month)$/,
   email_id_1: /^[0-9]{1,12}$/, email_id_2: /^[0-9]{1,12}$/, email_id_3: /^[0-9]{1,12}$/, email_id_4: /^[0-9]{1,12}$/, email_id_5: /^[0-9]{1,12}$/,
 };

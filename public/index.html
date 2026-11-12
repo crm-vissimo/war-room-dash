@@ -539,7 +539,7 @@ td .tp.vid { background: var(--ev-orange); }
     <h3>Como ler</h3>
     <p>Receita = valor pago pelos itens (depois de cupom) + frete, do Magento. Em Hoje vale a boleto condition (pedidos solid, sem SAC, televendas, ItaúShop e Vivino, com boleto a 65% e PIX a 75%; PMV sem o fator); em Ontem e no mês, pedidos pagos. CM2 % = CM2 ÷ receita com frete. PMV = receita das garrafas ÷ garrafas.</p>
     <p>Pedidos e canais = último clique (vw_ev_last_click_pedido). Em Hoje e Ontem a receita por canal é cruzada pedido a pedido, ao vivo; no mês vem da planilha Monitoramento de Canais.</p>
-    <p>YoY aparece em Ontem (mesmo dia da semana do ano passado, 364 dias antes, que alinha Black com Black) e no mês (mesmas datas do ano passado). Hoje não tem YoY nem atingimento, porque o dia ainda está em andamento.</p>
+    <p>YoY aparece em Ontem e no mês, sempre contra as mesmas datas do ano passado (ontem, 10/11, contra 10/11 do ano anterior). Hoje não tem YoY nem atingimento, porque o dia ainda está em andamento.</p>
     <p>Fontes: Dados Víssimo, Google Sheets (Monitoramento de Canais), Meta Ads (conta Evino Oficial) e Insider One. Cada pessoa vê os números com o próprio acesso a esses conectores.</p>
   </footer>
 </div>
@@ -556,11 +556,12 @@ td .tp.vid { background: var(--ev-orange); }
     const ontem = shift(hoje, -1);
     const mtdIni = hoje.slice(0, 8) + '01';
     const mtdFim = ontem < mtdIni ? hoje : ontem;
-    const PLANO = { '2026-10': '1JcYd-hi0CbZjB3BntL8n-VPH1ZVQZEtn4Prc50XB5cA', '2026-11': '1Gq9dh7KfKH2OXOH3wtwjsbD66J0n_In4BAYtv6nD2nM' };
+    /* mês do Plano de Vendas: o servidor acha a planilha 'MM. M-1 Plano de Vendas MmmAA' nas pastas do Drive */
+    const planoMes = (p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7);
     const base = { periodo: p, pago_in: p === 'hoje' ? '(0,1)' : '(1)', hoje, sem_passada: shift(hoje, -7), mtd_ini: mtdIni, mtd_fim: mtdFim, ini_email: shift(p === 'ontem' ? ontem : p === 'mtd' ? mtdIni : hoje, -3) };
-    if (p === 'ontem') return Object.assign(base, { ini: ontem, fim: ontem, ini_yoy: shift(ontem, -364), fim_yoy: shift(ontem, -364), meta_preset: 'yesterday', plano_id: PLANO[(p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7)] || PLANO['2026-11'] });
-    if (p === 'mtd') return Object.assign(base, { ini: mtdIni, fim: mtdFim, ini_yoy: minusYear(mtdIni), fim_yoy: minusYear(mtdFim), meta_preset: 'this_month', plano_id: PLANO[(p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7)] || PLANO['2026-11'] });
-    return Object.assign(base, { ini: hoje, fim: hoje, ini_yoy: shift(hoje, -364), fim_yoy: shift(hoje, -364), meta_preset: 'today', plano_id: PLANO[(p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7)] || PLANO['2026-11'] });
+    if (p === 'ontem') return Object.assign(base, { ini: ontem, fim: ontem, ini_yoy: minusYear(ontem), fim_yoy: minusYear(ontem), meta_preset: 'yesterday', plano_mes: planoMes });
+    if (p === 'mtd') return Object.assign(base, { ini: mtdIni, fim: mtdFim, ini_yoy: minusYear(mtdIni), fim_yoy: minusYear(mtdFim), meta_preset: 'this_month', plano_mes: planoMes });
+    return Object.assign(base, { ini: hoje, fim: hoje, ini_yoy: minusYear(hoje), fim_yoy: minusYear(hoje), meta_preset: 'today', plano_mes: planoMes });
   }
   window.WR_janela = janela;
   dash.setParams(janela(dash.params().periodo || 'hoje'));
@@ -570,6 +571,9 @@ td .tp.vid { background: var(--ev-orange); }
     document.querySelectorAll('.wr .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === p)));
     const show = { 'c-dia': p !== 'mtd', 'c-mtd': p === 'mtd', 'c-hoje': p === 'hoje', 'c-ontem': p === 'ontem', 'c-nohoje': p !== 'hoje' };
     Object.keys(show).forEach((c) => document.querySelectorAll('.wr .' + c).forEach((el) => { el.hidden = !show[c]; }));
+    /* Super Meta: o card só aparece no mês que tem Super Meta cadastrada (SUPER_META em data.js) */
+    const sm = dash.data('super_meta');
+    document.querySelectorAll('.wr .tile.super').forEach((el) => { if (sm.status === 'ok' && !sm.data.length) el.hidden = true; });
     /* ids das 5 campanhas de email com mais receita LC, para buscar enviados e open rate no Insider (nas três abas) */
     const ce = dash.data('camp_email');
     if (ce.status === 'ok') {
