@@ -249,7 +249,7 @@ dash.calc('canais', {
     const z = { rec: 0, plan: 0, inv: 0, inv_plan: 0 };
     const tot = ORD.reduce((s, g) => { const o = A[g] || z; return { rec: s.rec + o.rec, plan: s.plan + o.plan, inv: s.inv + o.inv, inv_plan: s.inv_plan + o.inv_plan }; }, { ...z });
     const totY = ORD.reduce((s, g) => s + ((Y[g] || z).rec), 0);
-    const mk = (canal, o, ry, ped) => ({ canal, pedidos: ped, receita: o.rec, meta: o.plan, ating: o.plan ? o.rec / o.plan : null, share: tot.rec ? o.rec / tot.rec : null, invest: o.inv, invest_plan: o.inv_plan, roas: o.inv ? o.rec / o.inv : null, roas_plan: o.inv_plan ? o.plan / o.inv_plan : null, receita_yoy: ry, var_yoy: ry ? o.rec / ry - 1 : null });
+    const mk = (canal, o, ry, ped) => ({ canal, pedidos: ped, receita: o.rec, meta: o.plan, gap: o.plan ? o.rec - o.plan : null, ating: o.plan ? o.rec / o.plan : null, share: tot.rec ? o.rec / tot.rec : null, invest: o.inv, invest_plan: o.inv_plan, roas: o.inv ? o.rec / o.inv : null, roas_plan: o.inv_plan ? o.plan / o.inv_plan : null, receita_yoy: ry, var_yoy: ry ? o.rec / ry - 1 : null });
     const rows = ORD.map((g) => mk(g, A[g] || z, (Y[g] || z).rec, P[g] || 0)).filter((r) => r.receita || r.meta || r.invest);
     rows.push(mk('Total', tot, totY, Object.values(P).reduce((s, n) => s + n, 0)));
     return rows;
@@ -346,9 +346,17 @@ dash.calc('hora', {
 dash.calc('diario', {
   title: 'Receita last click por dia no mês',
   description: 'Receita last click e meta de cada dia do mês corrente e receita do mesmo dia do ano passado, da planilha de canais.',
-  inputs: ['canais_diario', 'email_insider_mes'],
-  fn: (canais_diario, email_insider_mes) => {
+  inputs: ['canais_diario', 'email_insider_mes', 'vendas'],
+  fn: (canais_diario, email_insider_mes, vendas) => {
     if (!canais_diario.length) return [];
+    /* Personalizado: os dias do período escolhido, comparados com as mesmas datas do ano anterior */
+    const P = typeof dash !== 'undefined' && dash.params ? dash.params() : {};
+    if (P.periodo === 'pers' && vendas.length) {
+      const a = vendas[0].ini, b = vendas[0].fim, menosAno = (d) => String(+d.slice(0, 4) - 1) + d.slice(4);
+      const by = {}, L = {};
+      canais_diario.forEach((r) => { if (r.canal === 'Total') return; if (r.data >= a && r.data <= b) { const o = by[r.data] || (by[r.data] = { rec: 0, plan: 0 }); o.rec += r.rec; o.plan += r.rec_plan; } L[r.data] = (L[r.data] || 0) + r.rec; });
+      return Object.keys(by).sort().map((d) => ({ data: d, receita: by[d].rec, meta: by[d].plan, receita_ly: L[menosAno(d)] != null ? L[menosAno(d)] : null }));
+    }
     /* o período do mês vem do Insider; sem ele, mês corrente até ontem (horário de Brasília) */
     const ontem = new Date(Date.now() - 27 * 3600e3).toISOString().slice(0, 10);
     const ini = email_insider_mes.length ? email_insider_mes[0].ini : ontem.slice(0, 8) + '01';
@@ -378,14 +386,15 @@ dash.calc('kits_top', {
 
 dash.calc('fb_resumo', {
   title: 'Meta Ads no período × mês',
-  description: 'CTR no link, CPC e CPM dos anúncios de e-commerce (sem Clube e Installs) no período e no mês corrente, e a variação do período contra o mês.',
-  inputs: ['meta_ads', 'meta_ads_mes'],
-  fn: (meta_ads, meta_ads_mes) => {
+  description: 'CTR no link, CPC e CPM dos anúncios de e-commerce (sem Clube e Installs) no período, no mês corrente e nas mesmas datas do ano passado; variação do período contra o mês (Hoje e Ontem) e contra o ano passado (mês e personalizado).',
+  inputs: ['meta_ads', 'meta_ads_mes', 'meta_ads_yoy'],
+  fn: (meta_ads, meta_ads_mes, meta_ads_yoy) => {
     const t = (rows) => { const a = rows.filter((r) => !/clube|install/i.test(r.campanha || '')); const g = a.reduce((s, r) => s + r.gasto, 0), i = a.reduce((s, r) => s + r.impressoes, 0), c = a.reduce((s, r) => s + r.cliques, 0); return { g, i, c, ctr: i ? c / i : null, cpm: i ? (g / i) * 1000 : null, cpc: c ? g / c : null }; };
     if (!meta_ads.length) return [];
-    const p = t(meta_ads), m = t(meta_ads_mes);
+    const p = t(meta_ads), m = t(meta_ads_mes), y = t(meta_ads_yoy);
     const v = (a, b) => (a != null && b ? a / b - 1 : null);
-    return [{ gasto: p.g, impressoes: p.i, cliques: p.c, ctr: p.ctr, cpc: p.cpc, cpm: p.cpm, ctr_mes: m.ctr, cpc_mes: m.cpc, cpm_mes: m.cpm, var_ctr: v(p.ctr, m.ctr), var_cpc: v(p.cpc, m.cpc), var_cpm: v(p.cpm, m.cpm) }];
+    return [{ gasto: p.g, impressoes: p.i, cliques: p.c, ctr: p.ctr, cpc: p.cpc, cpm: p.cpm, ctr_mes: m.ctr, cpc_mes: m.cpc, cpm_mes: m.cpm, var_ctr: v(p.ctr, m.ctr), var_cpc: v(p.cpc, m.cpc), var_cpm: v(p.cpm, m.cpm),
+      ctr_yoy: y.ctr, cpc_yoy: y.cpc, cpm_yoy: y.cpm, var_ctr_yoy: v(p.ctr, y.ctr), var_cpc_yoy: v(p.cpc, y.cpc), var_cpm_yoy: v(p.cpm, y.cpm) }];
   },
 });
 
