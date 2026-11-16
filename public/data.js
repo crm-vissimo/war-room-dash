@@ -555,27 +555,32 @@ dash.calc('camp_email', {
 });
 dash.calc('camp_whats', {
   title: 'Top 5 disparos de WhatsApp',
-  description: 'Pedidos e receita (produto + frete) dos pedidos pagos com último clique em WhatsApp, por utm_campaign; enviados do disparo no Insider (pelo nome) e ROAS = receita ÷ (enviados × R$ 0,3991); os 5 de maior receita.',
+  description: 'Pedidos e receita (produto + frete) dos pedidos pagos com último clique em WhatsApp, por utm_campaign; entregues do disparo no Insider (pelo nome) e ROAS = receita ÷ (entregues × R$ 0,3991); os 5 de maior receita.',
   inputs: ['pedidos_lc', 'whats_insider', 'lc_agg'],
   fn: (pedidos_lc, whats_insider, lc_agg) => {
-    const E = new Map(whats_insider.map((c) => [String(c.campanha).toLowerCase(), c.enviados]));
+    const E = new Map(whats_insider.map((c) => [String(c.campanha).toLowerCase(), c.entregues]));
     const C = lcBase(pedidos_lc, lc_agg, 'WhatsApp').camp;
-    return Object.keys(C).map((k) => { const env = E.get(k.toLowerCase()); const inv = env ? env * 0.3991 : null; return { campanha: k, enviados: env == null ? null : env, pedidos: C[k].pedidos, receita: C[k].receita, roas: inv ? C[k].receita / inv : null }; }).sort((a, b) => b.receita - a.receita).slice(0, 5);
+    return Object.keys(C).map((k) => { const ent = E.get(k.toLowerCase()); const inv = ent ? ent * 0.3991 : null; return { campanha: k, entregues: ent == null ? null : ent, pedidos: C[k].pedidos, receita: C[k].receita, roas: inv ? C[k].receita / inv : null }; }).sort((a, b) => b.receita - a.receita).slice(0, 5);
   },
 });
 
 dash.calc('camp_email_full', {
   title: 'Top 5 campanhas de email com envios',
-  description: 'As 5 campanhas de email de maior receita last click com enviados e open rate de cada uma no Insider.',
+  description: 'As 5 campanhas de email de maior receita last click com entregues e open rate de cada uma no Insider e CTOR = pedidos last click ÷ emails abertos (aberturas do Insider; sem elas, entregues × open rate).',
   inputs: ['camp_email', 'email_c1', 'email_c2', 'email_c3', 'email_c4', 'email_c5'],
   fn: (camp_email, email_c1, email_c2, email_c3, email_c4, email_c5) => {
     const S = new Map([].concat(email_c1, email_c2, email_c3, email_c4, email_c5).map((r) => [String(r.id), r]));
-    return camp_email.map((r) => { const st = S.get(String(r.campaign_id)); return { campanha: r.campanha, enviados: st ? st.enviados : null, open_rate: st ? st.open_rate : null, pedidos: r.pedidos, receita: r.receita }; });
+    return camp_email.map((r) => {
+      const st = S.get(String(r.campaign_id));
+      const ent = st ? (st.entregues != null ? st.entregues : st.enviados) : null, or = st ? st.open_rate : null;
+      const ab = st && st.aberturas != null ? st.aberturas : ent != null && or != null ? ent * or : null;
+      return { campanha: r.campanha, entregues: ent, open_rate: or, pedidos: r.pedidos, ctor: ab ? r.pedidos / ab : null, receita: r.receita };
+    });
   },
 });
 dash.calc('whats_resumo', {
   title: 'WhatsApp no período (Insider)',
-  description: 'Soma dos disparos de WhatsApp do Insider; investimento = enviados × R$ 0,3991; enviados comparados com a média diária do mês até ontem.',
+  description: 'Soma dos disparos de WhatsApp do Insider; investimento = entregues × R$ 0,3991 (mensagem que não entrega não é cobrada); entregues comparados com a média diária do mês até ontem.',
   inputs: ['whats_insider', 'whats_insider_mes'],
   fn: (whats_insider, whats_insider_mes) => {
     const CUSTO = 0.3991;
@@ -583,14 +588,14 @@ dash.calc('whats_resumo', {
     const env = s(whats_insider, 'enviados'), ent = s(whats_insider, 'entregues');
     const m = whats_insider_mes;
     const nd = m.length ? Math.round((new Date(m[0].fim) - new Date(m[0].ini)) / 864e5) + 1 : null;
-    const media = nd ? s(m, 'enviados') / nd : null;
-    return [{ enviados: env, entregues: ent, taxa_entrega: env ? ent / env : null, cliques: s(whats_insider, 'cliques'), taxa_clique: ent ? s(whats_insider, 'cliques') / ent : null, conversoes: s(whats_insider, 'conversoes'), investimento: env * CUSTO, enviados_media_dia: media, var_enviados: media ? env / media - 1 : null }];
+    const media = nd ? s(m, 'entregues') / nd : null;
+    return [{ enviados: env, entregues: ent, taxa_entrega: env ? ent / env : null, cliques: s(whats_insider, 'cliques'), taxa_clique: ent ? s(whats_insider, 'cliques') / ent : null, conversoes: s(whats_insider, 'conversoes'), investimento: ent * CUSTO, entregues_media_dia: media, var_entregues: media ? ent / media - 1 : null }];
   },
 });
 
 dash.calc('whats_roas_dia', {
   title: 'ROAS WhatsApp (dia)',
-  description: 'Receita last click do WhatsApp nos pedidos pagos do dia ÷ investimento (enviados × R$ 0,3991).',
+  description: 'Receita last click do WhatsApp nos pedidos pagos do dia ÷ investimento (entregues × R$ 0,3991).',
   inputs: ['canais_dia', 'whats_resumo'],
   fn: (canais_dia, whats_resumo) => {
     const w = canais_dia.find((r) => r.canal === 'WhatsApp'), r = whats_resumo[0];
@@ -602,7 +607,7 @@ dash.calc('whats_roas_dia', {
 
 dash.calc('whats_roas_mtd', {
   title: 'ROAS WhatsApp (mês)',
-  description: 'Receita last click do WhatsApp no mês (planilha de canais) ÷ investimento (enviados × R$ 0,3991).',
+  description: 'Receita last click do WhatsApp no mês (planilha de canais) ÷ investimento (entregues × R$ 0,3991).',
   inputs: ['canais', 'whats_resumo'],
   fn: (canais, whats_resumo) => {
     const w = canais.find((r) => r.canal === 'WhatsApp'), r = whats_resumo[0];
@@ -614,15 +619,17 @@ dash.calc('whats_roas_mtd', {
 
 dash.calc('email_resumo', {
   title: 'Email no período × mês (Insider)',
-  description: 'Enviados, entrega, abertura e CTR do Insider no período; enviados contra a média diária do mês até ontem e abertura contra a abertura do mês, em pontos percentuais.',
-  inputs: ['email_insider', 'email_insider_mes'],
-  fn: (email_insider, email_insider_mes) => {
+  description: 'Entregues, entrega, abertura e CTR do Insider no período; entregues contra a média diária do mês até ontem e abertura contra a abertura do mês, em pontos percentuais; CTOR = pedidos last click do Email ÷ emails abertos (entregues × abertura).',
+  inputs: ['email_insider', 'email_insider_mes', 'canais'],
+  fn: (email_insider, email_insider_mes, canais) => {
     const e = email_insider[0], m = email_insider_mes[0];
     if (!e) return [];
     const nd = m ? Math.round((new Date(m.fim) - new Date(m.ini)) / 864e5) + 1 : null;
-    const media = m && nd ? m.enviados / nd : null;
+    const media = m && nd ? m.entregues / nd : null;
     const ab = e.taxa_abertura == null ? null : e.taxa_abertura / 100, abm = m && m.taxa_abertura != null ? m.taxa_abertura / 100 : null;
-    return [{ enviados: e.enviados, taxa_entrega: e.taxa_entrega == null ? null : e.taxa_entrega / 100, taxa_abertura: ab, ctr: e.ctr == null ? null : e.ctr / 100, enviados_media_dia: media, var_enviados: media ? e.enviados / media - 1 : null, abertura_mes: abm, var_abertura: ab != null && abm != null ? ab - abm : null }];
+    const abertos = ab != null ? e.entregues * ab : null;
+    const em = canais.find((r) => r.canal === 'Email'), ped = em ? em.pedidos : null;
+    return [{ enviados: e.enviados, entregues: e.entregues, taxa_entrega: e.taxa_entrega == null ? null : e.taxa_entrega / 100, taxa_abertura: ab, ctr: e.ctr == null ? null : e.ctr / 100, entregues_media_dia: media, var_entregues: media ? e.entregues / media - 1 : null, abertura_mes: abm, var_abertura: ab != null && abm != null ? ab - abm : null, abertos, pedidos: ped, ctor: abertos && ped != null ? ped / abertos : null }];
   },
 });
 
