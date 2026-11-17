@@ -249,7 +249,7 @@ dash.calc('canais', {
     const z = { rec: 0, plan: 0, inv: 0, inv_plan: 0 };
     const tot = ORD.reduce((s, g) => { const o = A[g] || z; return { rec: s.rec + o.rec, plan: s.plan + o.plan, inv: s.inv + o.inv, inv_plan: s.inv_plan + o.inv_plan }; }, { ...z });
     const totY = ORD.reduce((s, g) => s + ((Y[g] || z).rec), 0);
-    const mk = (canal, o, ry, ped) => ({ canal, pedidos: ped, receita: o.rec, meta: o.plan, ating: o.plan ? o.rec / o.plan : null, share: tot.rec ? o.rec / tot.rec : null, invest: o.inv, invest_plan: o.inv_plan, roas: o.inv ? o.rec / o.inv : null, roas_plan: o.inv_plan ? o.plan / o.inv_plan : null, receita_yoy: ry, var_yoy: ry ? o.rec / ry - 1 : null });
+    const mk = (canal, o, ry, ped) => ({ canal, pedidos: ped, receita: o.rec, meta: o.plan, gap: o.plan ? o.rec - o.plan : null, ating: o.plan ? o.rec / o.plan : null, share: tot.rec ? o.rec / tot.rec : null, invest: o.inv, invest_plan: o.inv_plan, roas: o.inv ? o.rec / o.inv : null, roas_plan: o.inv_plan ? o.plan / o.inv_plan : null, receita_yoy: ry, var_yoy: ry ? o.rec / ry - 1 : null });
     const rows = ORD.map((g) => mk(g, A[g] || z, (Y[g] || z).rec, P[g] || 0)).filter((r) => r.receita || r.meta || r.invest);
     rows.push(mk('Total', tot, totY, Object.values(P).reduce((s, n) => s + n, 0)));
     return rows;
@@ -346,9 +346,17 @@ dash.calc('hora', {
 dash.calc('diario', {
   title: 'Receita last click por dia no mês',
   description: 'Receita last click e meta de cada dia do mês corrente e receita do mesmo dia do ano passado, da planilha de canais.',
-  inputs: ['canais_diario', 'email_insider_mes'],
-  fn: (canais_diario, email_insider_mes) => {
+  inputs: ['canais_diario', 'email_insider_mes', 'vendas'],
+  fn: (canais_diario, email_insider_mes, vendas) => {
     if (!canais_diario.length) return [];
+    /* Personalizado: os dias do período escolhido, comparados com as mesmas datas do ano anterior */
+    const P = typeof dash !== 'undefined' && dash.params ? dash.params() : {};
+    if (P.periodo === 'pers' && vendas.length) {
+      const a = vendas[0].ini, b = vendas[0].fim, menosAno = (d) => String(+d.slice(0, 4) - 1) + d.slice(4);
+      const by = {}, L = {};
+      canais_diario.forEach((r) => { if (r.canal === 'Total') return; if (r.data >= a && r.data <= b) { const o = by[r.data] || (by[r.data] = { rec: 0, plan: 0 }); o.rec += r.rec; o.plan += r.rec_plan; } L[r.data] = (L[r.data] || 0) + r.rec; });
+      return Object.keys(by).sort().map((d) => ({ data: d, receita: by[d].rec, meta: by[d].plan, receita_ly: L[menosAno(d)] != null ? L[menosAno(d)] : null }));
+    }
     /* o período do mês vem do Insider; sem ele, mês corrente até ontem (horário de Brasília) */
     const ontem = new Date(Date.now() - 27 * 3600e3).toISOString().slice(0, 10);
     const ini = email_insider_mes.length ? email_insider_mes[0].ini : ontem.slice(0, 8) + '01';
@@ -378,14 +386,15 @@ dash.calc('kits_top', {
 
 dash.calc('fb_resumo', {
   title: 'Meta Ads no período × mês',
-  description: 'CTR no link, CPC e CPM dos anúncios de e-commerce (sem Clube e Installs) no período e no mês corrente, e a variação do período contra o mês.',
-  inputs: ['meta_ads', 'meta_ads_mes'],
-  fn: (meta_ads, meta_ads_mes) => {
+  description: 'CTR no link, CPC e CPM dos anúncios de e-commerce (sem Clube e Installs) no período, no mês corrente e nas mesmas datas do ano passado; variação do período contra o mês (Hoje e Ontem) e contra o ano passado (mês e personalizado).',
+  inputs: ['meta_ads', 'meta_ads_mes', 'meta_ads_yoy'],
+  fn: (meta_ads, meta_ads_mes, meta_ads_yoy) => {
     const t = (rows) => { const a = rows.filter((r) => !/clube|install/i.test(r.campanha || '')); const g = a.reduce((s, r) => s + r.gasto, 0), i = a.reduce((s, r) => s + r.impressoes, 0), c = a.reduce((s, r) => s + r.cliques, 0); return { g, i, c, ctr: i ? c / i : null, cpm: i ? (g / i) * 1000 : null, cpc: c ? g / c : null }; };
     if (!meta_ads.length) return [];
-    const p = t(meta_ads), m = t(meta_ads_mes);
+    const p = t(meta_ads), m = t(meta_ads_mes), y = t(meta_ads_yoy);
     const v = (a, b) => (a != null && b ? a / b - 1 : null);
-    return [{ gasto: p.g, impressoes: p.i, cliques: p.c, ctr: p.ctr, cpc: p.cpc, cpm: p.cpm, ctr_mes: m.ctr, cpc_mes: m.cpc, cpm_mes: m.cpm, var_ctr: v(p.ctr, m.ctr), var_cpc: v(p.cpc, m.cpc), var_cpm: v(p.cpm, m.cpm) }];
+    return [{ gasto: p.g, impressoes: p.i, cliques: p.c, ctr: p.ctr, cpc: p.cpc, cpm: p.cpm, ctr_mes: m.ctr, cpc_mes: m.cpc, cpm_mes: m.cpm, var_ctr: v(p.ctr, m.ctr), var_cpc: v(p.cpc, m.cpc), var_cpm: v(p.cpm, m.cpm),
+      ctr_yoy: y.ctr, cpc_yoy: y.cpc, cpm_yoy: y.cpm, var_ctr_yoy: v(p.ctr, y.ctr), var_cpc_yoy: v(p.cpc, y.cpc), var_cpm_yoy: v(p.cpm, y.cpm) }];
   },
 });
 
@@ -546,27 +555,32 @@ dash.calc('camp_email', {
 });
 dash.calc('camp_whats', {
   title: 'Top 5 disparos de WhatsApp',
-  description: 'Pedidos e receita (produto + frete) dos pedidos pagos com último clique em WhatsApp, por utm_campaign; enviados do disparo no Insider (pelo nome) e ROAS = receita ÷ (enviados × R$ 0,3991); os 5 de maior receita.',
+  description: 'Pedidos e receita (produto + frete) dos pedidos pagos com último clique em WhatsApp, por utm_campaign; entregues do disparo no Insider (pelo nome) e ROAS = receita ÷ (entregues × R$ 0,3991); os 5 de maior receita.',
   inputs: ['pedidos_lc', 'whats_insider', 'lc_agg'],
   fn: (pedidos_lc, whats_insider, lc_agg) => {
-    const E = new Map(whats_insider.map((c) => [String(c.campanha).toLowerCase(), c.enviados]));
+    const E = new Map(whats_insider.map((c) => [String(c.campanha).toLowerCase(), c.entregues]));
     const C = lcBase(pedidos_lc, lc_agg, 'WhatsApp').camp;
-    return Object.keys(C).map((k) => { const env = E.get(k.toLowerCase()); const inv = env ? env * 0.3991 : null; return { campanha: k, enviados: env == null ? null : env, pedidos: C[k].pedidos, receita: C[k].receita, roas: inv ? C[k].receita / inv : null }; }).sort((a, b) => b.receita - a.receita).slice(0, 5);
+    return Object.keys(C).map((k) => { const ent = E.get(k.toLowerCase()); const inv = ent ? ent * 0.3991 : null; return { campanha: k, entregues: ent == null ? null : ent, pedidos: C[k].pedidos, receita: C[k].receita, roas: inv ? C[k].receita / inv : null }; }).sort((a, b) => b.receita - a.receita).slice(0, 5);
   },
 });
 
 dash.calc('camp_email_full', {
   title: 'Top 5 campanhas de email com envios',
-  description: 'As 5 campanhas de email de maior receita last click com enviados e open rate de cada uma no Insider.',
+  description: 'As 5 campanhas de email de maior receita last click com entregues e open rate de cada uma no Insider e CTOR = pedidos last click ÷ emails abertos (aberturas do Insider; sem elas, entregues × open rate).',
   inputs: ['camp_email', 'email_c1', 'email_c2', 'email_c3', 'email_c4', 'email_c5'],
   fn: (camp_email, email_c1, email_c2, email_c3, email_c4, email_c5) => {
     const S = new Map([].concat(email_c1, email_c2, email_c3, email_c4, email_c5).map((r) => [String(r.id), r]));
-    return camp_email.map((r) => { const st = S.get(String(r.campaign_id)); return { campanha: r.campanha, enviados: st ? st.enviados : null, open_rate: st ? st.open_rate : null, pedidos: r.pedidos, receita: r.receita }; });
+    return camp_email.map((r) => {
+      const st = S.get(String(r.campaign_id));
+      const ent = st ? (st.entregues != null ? st.entregues : st.enviados) : null, or = st ? st.open_rate : null;
+      const ab = st && st.aberturas != null ? st.aberturas : ent != null && or != null ? ent * or : null;
+      return { campanha: r.campanha, entregues: ent, open_rate: or, pedidos: r.pedidos, ctor: ab ? r.pedidos / ab : null, receita: r.receita };
+    });
   },
 });
 dash.calc('whats_resumo', {
   title: 'WhatsApp no período (Insider)',
-  description: 'Soma dos disparos de WhatsApp do Insider; investimento = enviados × R$ 0,3991; enviados comparados com a média diária do mês até ontem.',
+  description: 'Soma dos disparos de WhatsApp do Insider; investimento = entregues × R$ 0,3991 (mensagem que não entrega não é cobrada); entregues comparados com a média diária do mês até ontem.',
   inputs: ['whats_insider', 'whats_insider_mes'],
   fn: (whats_insider, whats_insider_mes) => {
     const CUSTO = 0.3991;
@@ -574,14 +588,14 @@ dash.calc('whats_resumo', {
     const env = s(whats_insider, 'enviados'), ent = s(whats_insider, 'entregues');
     const m = whats_insider_mes;
     const nd = m.length ? Math.round((new Date(m[0].fim) - new Date(m[0].ini)) / 864e5) + 1 : null;
-    const media = nd ? s(m, 'enviados') / nd : null;
-    return [{ enviados: env, entregues: ent, taxa_entrega: env ? ent / env : null, cliques: s(whats_insider, 'cliques'), taxa_clique: ent ? s(whats_insider, 'cliques') / ent : null, conversoes: s(whats_insider, 'conversoes'), investimento: env * CUSTO, enviados_media_dia: media, var_enviados: media ? env / media - 1 : null }];
+    const media = nd ? s(m, 'entregues') / nd : null;
+    return [{ enviados: env, entregues: ent, taxa_entrega: env ? ent / env : null, cliques: s(whats_insider, 'cliques'), taxa_clique: ent ? s(whats_insider, 'cliques') / ent : null, conversoes: s(whats_insider, 'conversoes'), investimento: ent * CUSTO, entregues_media_dia: media, var_entregues: media ? ent / media - 1 : null }];
   },
 });
 
 dash.calc('whats_roas_dia', {
   title: 'ROAS WhatsApp (dia)',
-  description: 'Receita last click do WhatsApp nos pedidos pagos do dia ÷ investimento (enviados × R$ 0,3991).',
+  description: 'Receita last click do WhatsApp nos pedidos pagos do dia ÷ investimento (entregues × R$ 0,3991).',
   inputs: ['canais_dia', 'whats_resumo'],
   fn: (canais_dia, whats_resumo) => {
     const w = canais_dia.find((r) => r.canal === 'WhatsApp'), r = whats_resumo[0];
@@ -593,7 +607,7 @@ dash.calc('whats_roas_dia', {
 
 dash.calc('whats_roas_mtd', {
   title: 'ROAS WhatsApp (mês)',
-  description: 'Receita last click do WhatsApp no mês (planilha de canais) ÷ investimento (enviados × R$ 0,3991).',
+  description: 'Receita last click do WhatsApp no mês (planilha de canais) ÷ investimento (entregues × R$ 0,3991).',
   inputs: ['canais', 'whats_resumo'],
   fn: (canais, whats_resumo) => {
     const w = canais.find((r) => r.canal === 'WhatsApp'), r = whats_resumo[0];
@@ -605,15 +619,17 @@ dash.calc('whats_roas_mtd', {
 
 dash.calc('email_resumo', {
   title: 'Email no período × mês (Insider)',
-  description: 'Enviados, entrega, abertura e CTR do Insider no período; enviados contra a média diária do mês até ontem e abertura contra a abertura do mês, em pontos percentuais.',
-  inputs: ['email_insider', 'email_insider_mes'],
-  fn: (email_insider, email_insider_mes) => {
+  description: 'Entregues, entrega, abertura e CTR do Insider no período; entregues contra a média diária do mês até ontem e abertura contra a abertura do mês, em pontos percentuais; CTOR = pedidos last click do Email ÷ emails abertos (entregues × abertura).',
+  inputs: ['email_insider', 'email_insider_mes', 'canais'],
+  fn: (email_insider, email_insider_mes, canais) => {
     const e = email_insider[0], m = email_insider_mes[0];
     if (!e) return [];
     const nd = m ? Math.round((new Date(m.fim) - new Date(m.ini)) / 864e5) + 1 : null;
-    const media = m && nd ? m.enviados / nd : null;
+    const media = m && nd ? m.entregues / nd : null;
     const ab = e.taxa_abertura == null ? null : e.taxa_abertura / 100, abm = m && m.taxa_abertura != null ? m.taxa_abertura / 100 : null;
-    return [{ enviados: e.enviados, taxa_entrega: e.taxa_entrega == null ? null : e.taxa_entrega / 100, taxa_abertura: ab, ctr: e.ctr == null ? null : e.ctr / 100, enviados_media_dia: media, var_enviados: media ? e.enviados / media - 1 : null, abertura_mes: abm, var_abertura: ab != null && abm != null ? ab - abm : null }];
+    const abertos = ab != null ? e.entregues * ab : null;
+    const em = canais.find((r) => r.canal === 'Email'), ped = em ? em.pedidos : null;
+    return [{ enviados: e.enviados, entregues: e.entregues, taxa_entrega: e.taxa_entrega == null ? null : e.taxa_entrega / 100, taxa_abertura: ab, ctr: e.ctr == null ? null : e.ctr / 100, entregues_media_dia: media, var_entregues: media ? e.entregues / media - 1 : null, abertura_mes: abm, var_abertura: ab != null && abm != null ? ab - abm : null, abertos, pedidos: ped, ctor: abertos && ped != null ? ped / abertos : null }];
   },
 });
 

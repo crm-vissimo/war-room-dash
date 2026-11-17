@@ -40,6 +40,16 @@
 .wr .tabs button { font-family: var(--f-ret); font-weight: 700; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; border: 2px solid var(--ev-red); background: #fff; color: var(--ev-red); padding: 7px 20px; border-radius: 999px; cursor: pointer; }
 .wr .tabs button[aria-pressed="true"] { background: var(--ev-red); color: #fff; }
 .wr .tabs button:focus-visible { outline: 3px solid var(--ev-wine); outline-offset: 2px; }
+/* Personalizado: datas de início e fim ao lado dos botões */
+.wr .pers-box { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; color: var(--ev-wine); }
+.wr .pers-box[hidden] { display: none; }
+.wr .pers-box label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.wr .pers-box input[type="date"] { font: inherit; color: var(--ev-dark); border: 2px solid var(--ev-line); border-radius: 10px; padding: 5px 8px; background: #fff; }
+.wr .pers-box input[type="date"]:focus-visible { outline: 3px solid var(--ev-wine); outline-offset: 1px; }
+.wr .tabs .pers-box button { padding: 5px 16px; font-size: 14px; background: var(--ev-wine); border-color: var(--ev-wine); color: #fff; }
+.wr sup.ast { font-size: 10px; color: var(--ev-wine); margin-left: 1px; cursor: help; }
+.wr .nota-ast { font-size: 11px; color: #7a4a46; margin: 2px 0 0; }
+.wr .pers-msg { font-size: 13px; color: var(--ev-bad); }
 .wr .per { font-size: 14px; color: var(--ev-wine); }
 .wr .per b { font-weight: 600; }
 .wr section { display: grid; gap: 14px; }
@@ -246,6 +256,13 @@ td .tp.vid { background: var(--ev-orange); }
       <button type="button" class="tab" data-p="hoje" id="tab-hoje" aria-pressed="true">Hoje</button>
       <button type="button" class="tab" data-p="ontem" id="tab-ontem" aria-pressed="false">Ontem</button>
       <button type="button" class="tab" data-p="mtd" id="tab-mtd" aria-pressed="false">Mês até ontem</button>
+      <button type="button" class="tab" data-p="pers" id="tab-pers" aria-pressed="false" aria-controls="pers-box">Personalizado</button>
+      <form class="pers-box" id="pers-box" hidden>
+        <label>De <input type="date" id="pers-ini" required></label>
+        <label>até <input type="date" id="pers-fim" required></label>
+        <button type="submit">Aplicar</button>
+        <span class="pers-msg" role="status"></span>
+      </form>
     </div>
     <p class="per">Período <b data-draw="per">—</b><span class="c-nohoje"> · YoY contra <b data-draw="per_yoy">—</b></span></p>
   </div>
@@ -256,7 +273,7 @@ td .tp.vid { background: var(--ev-orange); }
     <div class="tiles">
       <div class="tile c-dia" data-fetchpriority="high"><span class="lb">Receita last click</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="receita" data-fmt="brl">—</span><span class="s">meta do dia <span data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="meta" data-fmt="brl">—</span></span></div>
       <div class="tile c-mtd super"><span class="lb">★ Super Meta</span><span class="v" data-draw="kv" data-source="super_meta" data-row="0" data-field="ating" data-fmt="atg">—</span><span class="s">até ontem <b data-draw="kv" data-source="super_meta" data-row="0" data-field="super_meta_periodo" data-fmt="brl">—</b> · mês <b data-draw="kv" data-source="super_meta" data-row="0" data-field="super_meta_mes" data-fmt="brl">—</b></span></div>
-      <div class="tile c-mtd" data-fetchpriority="high"><span class="lb">Receita last click</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="receita" data-fmt="brl">—</span><span class="s">meta <span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="meta" data-fmt="brl">—</span></span></div>
+      <div class="tile c-mtd" data-fetchpriority="high"><span class="lb">Receita last click</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="receita" data-fmt="brl">—</span><span class="s">meta <span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="meta" data-fmt="brl">—</span> · gap <span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="gap" data-fmt="brlsg">—</span></span></div>
       <div class="tile c-ontem"><span class="lb">Atingimento da meta</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="ating" data-fmt="atg" data-accent="atg">—</span><span class="s"><span data-draw="kv" data-source="canais_dia" data-where="canal=Total" data-field="var_yoy" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile c-mtd"><span class="lb">Atingimento da meta</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Total" data-field="ating" data-fmt="atg" data-accent="atg">—</span><span class="s"><span data-draw="kv" data-source="canais" data-where="canal=Total" data-field="var_yoy" data-fmt="delta">—</span> YoY</span></div>
       <div class="tile"><span class="lb">Pedidos</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="pedidos" data-fmt="int">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_pedidos" data-fmt="delta">—</span> YoY</span></div>
@@ -266,7 +283,7 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="tile"><span class="lb">Frete por garrafa</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="frete_gf" data-fmt="brl2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_frete_gf" data-fmt="delta">—</span> YoY</span><span class="s c-hoje">receita de frete ÷ garrafas</span></div>
       <div class="tile"><span class="lb">CM2 %</span><span class="v" data-draw="kv" data-source="kpis" data-row="0" data-field="cm2_pct" data-fmt="cm2" data-accent="cm2">—</span><span class="s c-nohoje"><span data-draw="kv" data-source="kpis" data-row="0" data-field="var_cm2_pp" data-fmt="pp">—</span> YoY</span></div>
       <div class="tile c-nohoje"><span class="lb">Investimento (Growth + Outros)</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="invest_plan" data-fmt="brl">—</span> · <span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="var_invest_yoy" data-fmt="delta">—</span> YoY</span></div>
-      <div class="tile c-nohoje"><span class="lb">Atingimento do investimento</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="ating_invest" data-fmt="atginv" data-accent="atginv">—</span><span class="s">investimento ÷ plano · verde até 100%, amarelo até 110%</span></div>
+      <div class="tile c-nohoje"><span class="lb">Atingimento do investimento</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="ating_invest" data-fmt="atginv" data-accent="atginv">—</span><span class="s">investimento ÷ plano</span></div>
       <div class="tile c-nohoje"><span class="lb">ROAS last click</span><span class="v" data-draw="kv" data-source="invest_resumo" data-row="0" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s"><span data-draw="kv" data-source="invest_resumo" data-row="0" data-field="var_roas_yoy" data-fmt="delta">—</span> YoY · receita LC ÷ investimento</span></div>
     </div>
 
@@ -347,7 +364,8 @@ td .tp.vid { background: var(--ev-orange); }
 
     <div class="c-nohoje card" id="canais-todos">
       <div class="card-h"><div><h3>Todos os canais</h3>
-        <p class="cap">Receita last click, meta e investimento da planilha Monitoramento de Canais no período. CM2 % = CM2 ÷ receita com frete dos pedidos pagos por canal de último clique (Dados Víssimo); no mês, leva mais tempo para chegar. Clique no cabeçalho para ordenar dentro de cada grupo; clique no grupo para recolher.</p></div>
+        <p class="cap">Receita last click, meta e investimento da planilha Monitoramento de Canais no período. CM2 % = CM2 ÷ receita com frete dos pedidos pagos por canal de último clique (Dados Víssimo); no mês, leva mais tempo para chegar. Clique no cabeçalho para ordenar dentro de cada grupo; clique no grupo para recolher.</p>
+        <p class="nota-ast"><sup>*</sup> WhatsApp: o custo nesta tabela não considera o investimento em réguas.</p></div>
         <button type="button" class="btn-det" aria-pressed="false">Ver detalhes</button></div>
       <div class="tw ct-wrap" data-draw="canais_todos" data-source="canais_todos"></div>
     </div>
@@ -379,9 +397,9 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="tile c-mtd"><span class="lb">Receita LC Facebook</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Facebook" data-field="receita" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais" data-where="canal=Facebook" data-field="meta" data-fmt="brl">—</span> · ating. <span data-draw="kv" data-source="canais" data-where="canal=Facebook" data-field="ating" data-fmt="atg">—</span></span></div>
       <div class="tile c-mtd"><span class="lb">Investimento Facebook</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Facebook" data-field="invest" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais" data-where="canal=Facebook" data-field="invest_plan" data-fmt="brl">—</span></span></div>
       <div class="tile c-mtd"><span class="lb">ROAS LC Facebook</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Facebook" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s">pedidos <span data-draw="kv" data-source="canais" data-where="canal=Facebook" data-field="pedidos" data-fmt="int">—</span></span></div>
-      <div class="tile"><span class="lb">CTR no link</span><span class="v" data-draw="kv" data-source="fb_resumo" data-row="0" data-field="ctr" data-fmt="pct2">—</span><span class="s c-dia">vs média do mês <span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_ctr" data-fmt="delta">—</span></span><span class="s c-mtd">cliques no link ÷ impressões</span></div>
-      <div class="tile"><span class="lb">CPC no link</span><span class="v" data-draw="kv" data-source="fb_resumo" data-row="0" data-field="cpc" data-fmt="brl2">—</span><span class="s c-dia">vs média do mês <span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_cpc" data-fmt="deltainv">—</span></span><span class="s c-mtd">gasto ÷ cliques no link</span></div>
-      <div class="tile"><span class="lb">CPM</span><span class="v" data-draw="kv" data-source="fb_resumo" data-row="0" data-field="cpm" data-fmt="brl2">—</span><span class="s c-dia">vs média do mês <span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_cpm" data-fmt="deltainv">—</span></span><span class="s c-mtd">gasto ÷ mil impressões</span></div>
+      <div class="tile"><span class="lb">CTR no link</span><span class="v" data-draw="kv" data-source="fb_resumo" data-row="0" data-field="ctr" data-fmt="pct2">—</span><span class="s c-dia">vs média do mês <span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_ctr" data-fmt="delta">—</span></span><span class="s c-mtd"><span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_ctr_yoy" data-fmt="delta">—</span> YoY · cliques no link ÷ impressões</span></div>
+      <div class="tile"><span class="lb">CPC no link</span><span class="v" data-draw="kv" data-source="fb_resumo" data-row="0" data-field="cpc" data-fmt="brl2">—</span><span class="s c-dia">vs média do mês <span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_cpc" data-fmt="deltainv">—</span></span><span class="s c-mtd"><span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_cpc_yoy" data-fmt="deltainv">—</span> YoY · gasto ÷ cliques no link</span></div>
+      <div class="tile"><span class="lb">CPM</span><span class="v" data-draw="kv" data-source="fb_resumo" data-row="0" data-field="cpm" data-fmt="brl2">—</span><span class="s c-dia">vs média do mês <span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_cpm" data-fmt="deltainv">—</span></span><span class="s c-mtd"><span data-draw="kv" data-source="fb_resumo" data-row="0" data-field="var_cpm_yoy" data-fmt="deltainv">—</span> YoY · gasto ÷ mil impressões</span></div>
     </div>
 
     <div class="c-mtd card" id="meta-cpm">
@@ -477,8 +495,9 @@ td .tp.vid { background: var(--ev-orange); }
         <div class="tiles">
           <div class="tile c-dia"><span class="lb">Receita LC</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=Email" data-field="receita" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais_dia" data-where="canal=Email" data-field="meta" data-fmt="brl">—</span><span class="c-ontem"> · ating. <span data-draw="kv" data-source="canais_dia" data-where="canal=Email" data-field="ating" data-fmt="atg">—</span></span></span></div>
           <div class="tile c-mtd"><span class="lb">Receita LC</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=Email" data-field="receita" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais" data-where="canal=Email" data-field="meta" data-fmt="brl">—</span> · ating. <span data-draw="kv" data-source="canais" data-where="canal=Email" data-field="ating" data-fmt="atg">—</span></span></div>
-          <div class="tile"><span class="lb">Enviados</span><span class="v" data-draw="kv" data-source="email_resumo" data-row="0" data-field="enviados" data-fmt="int">—</span><span class="s c-dia">vs média diária do mês <span data-draw="kv" data-source="email_resumo" data-row="0" data-field="var_enviados" data-fmt="delta">—</span></span><span class="s c-mtd">entrega <span data-draw="kv" data-source="email_resumo" data-row="0" data-field="taxa_entrega" data-fmt="pct">—</span></span></div>
+          <div class="tile"><span class="lb">Entregues</span><span class="v" data-draw="kv" data-source="email_resumo" data-row="0" data-field="entregues" data-fmt="int">—</span><span class="s c-dia">vs média diária do mês <span data-draw="kv" data-source="email_resumo" data-row="0" data-field="var_entregues" data-fmt="delta">—</span></span><span class="s c-mtd">entrega <span data-draw="kv" data-source="email_resumo" data-row="0" data-field="taxa_entrega" data-fmt="pct">—</span></span></div>
           <div class="tile"><span class="lb">Abertura</span><span class="v" data-draw="kv" data-source="email_resumo" data-row="0" data-field="taxa_abertura" data-fmt="pct">—</span><span class="s c-dia">vs média do mês <span data-draw="kv" data-source="email_resumo" data-row="0" data-field="var_abertura" data-fmt="pp">—</span></span><span class="s c-mtd">CTR <span data-draw="kv" data-source="email_resumo" data-row="0" data-field="ctr" data-fmt="pct2">—</span></span></div>
+          <div class="tile"><span class="lb">CTOR</span><span class="v" data-draw="kv" data-source="email_resumo" data-row="0" data-field="ctor" data-fmt="pct2">—</span><span class="s">pedidos LC ÷ emails abertos</span></div>
         </div>
       </div>
       <div class="card" id="whatsapp">
@@ -486,8 +505,8 @@ td .tp.vid { background: var(--ev-orange); }
         <div class="tiles">
           <div class="tile c-dia"><span class="lb">Receita LC</span><span class="v" data-draw="kv" data-source="canais_dia" data-where="canal=WhatsApp" data-field="receita" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais_dia" data-where="canal=WhatsApp" data-field="meta" data-fmt="brl">—</span><span class="c-ontem"> · ating. <span data-draw="kv" data-source="canais_dia" data-where="canal=WhatsApp" data-field="ating" data-fmt="atg">—</span></span></span></div>
           <div class="tile c-mtd"><span class="lb">Receita LC</span><span class="v" data-draw="kv" data-source="canais" data-where="canal=WhatsApp" data-field="receita" data-fmt="brl">—</span><span class="s">plano <span data-draw="kv" data-source="canais" data-where="canal=WhatsApp" data-field="meta" data-fmt="brl">—</span> · ating. <span data-draw="kv" data-source="canais" data-where="canal=WhatsApp" data-field="ating" data-fmt="atg">—</span></span></div>
-          <div class="tile"><span class="lb">Enviados</span><span class="v" data-draw="kv" data-source="whats_resumo" data-row="0" data-field="enviados" data-fmt="int">—</span><span class="s c-dia">vs média diária do mês <span data-draw="kv" data-source="whats_resumo" data-row="0" data-field="var_enviados" data-fmt="delta">—</span></span><span class="s c-mtd">entrega <span data-draw="kv" data-source="whats_resumo" data-row="0" data-field="taxa_entrega" data-fmt="pct">—</span></span></div>
-          <div class="tile"><span class="lb">Investimento</span><span class="v" data-draw="kv" data-source="whats_resumo" data-row="0" data-field="investimento" data-fmt="brl">—</span><span class="s">enviados × R$ 0,3991</span></div>
+          <div class="tile"><span class="lb">Entregues</span><span class="v" data-draw="kv" data-source="whats_resumo" data-row="0" data-field="entregues" data-fmt="int">—</span><span class="s c-dia">vs média diária do mês <span data-draw="kv" data-source="whats_resumo" data-row="0" data-field="var_entregues" data-fmt="delta">—</span></span><span class="s c-mtd">entrega <span data-draw="kv" data-source="whats_resumo" data-row="0" data-field="taxa_entrega" data-fmt="pct">—</span></span></div>
+          <div class="tile"><span class="lb">Investimento</span><span class="v" data-draw="kv" data-source="whats_resumo" data-row="0" data-field="investimento" data-fmt="brl">—</span><span class="s">entregues × R$ 0,3991</span></div>
           <div class="tile c-dia"><span class="lb">ROAS LC</span><span class="v" data-draw="kv" data-source="whats_roas_dia" data-row="0" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s">receita LC ÷ investimento</span></div>
           <div class="tile c-mtd"><span class="lb">ROAS LC</span><span class="v" data-draw="kv" data-source="whats_roas_mtd" data-row="0" data-field="roas" data-fmt="x" data-accent="x">—</span><span class="s">receita LC ÷ investimento</span></div>
         </div>
@@ -498,17 +517,17 @@ td .tp.vid { background: var(--ev-orange); }
       <div class="card" id="camp-email">
         <span class="pill-crm email">Email</span>
         <h3>Top 5 campanhas de email · receita last click</h3>
-        <p class="cap">Pedidos pagos cujo último clique foi um email (utm_campaign = nome da campanha no Insider). Enviados e open rate do Insider. Em Hoje, os disparos feitos hoje aparecem destacados.</p>
+        <p class="cap">Pedidos pagos cujo último clique foi um email (utm_campaign = nome da campanha no Insider). Entregues e open rate do Insider; CTOR = pedidos ÷ emails abertos. Em Hoje, os disparos feitos hoje aparecem destacados.</p>
         <div class="tw"><table data-source="camp_email_full" data-row-key="campanha" data-today-col="campanha">
-          <thead><tr><th tabindex="0" data-field="campanha">Campanha de email<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="enviados" data-fmt="int">Enviados</th><th tabindex="0" data-field="open_rate" data-fmt="pct">Open rate</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita LC</th></tr></thead>
+          <thead><tr><th tabindex="0" data-field="campanha">Campanha de email<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="entregues" data-fmt="int">Entregues</th><th tabindex="0" data-field="open_rate" data-fmt="pct">Open rate</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="ctor" data-fmt="pct2">CTOR</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita LC</th></tr></thead>
           <tbody data-draw="tbl"></tbody></table></div>
       </div>
       <div class="card" id="camp-whats">
         <span class="pill-crm whats">WhatsApp</span>
         <h3>Top 5 disparos de WhatsApp · receita last click</h3>
-        <p class="cap">Pedidos pagos cujo último clique foi um WhatsApp (utm_campaign = nome do disparo). Enviados do Insider; ROAS = receita LC ÷ (enviados × R$ 0,3991). Em Hoje, os disparos feitos hoje aparecem destacados.</p>
+        <p class="cap">Pedidos pagos cujo último clique foi um WhatsApp (utm_campaign = nome do disparo). Entregues do Insider; ROAS = receita LC ÷ (entregues × R$ 0,3991). Em Hoje, os disparos feitos hoje aparecem destacados.</p>
         <div class="tw"><table data-source="camp_whats" data-row-key="campanha" data-today-col="campanha">
-          <thead><tr><th tabindex="0" data-field="campanha">Disparo de WhatsApp<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="enviados" data-fmt="int">Enviados</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita LC</th><th tabindex="0" data-field="roas" data-fmt="xw">ROAS LC</th></tr></thead>
+          <thead><tr><th tabindex="0" data-field="campanha">Disparo de WhatsApp<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="entregues" data-fmt="int">Entregues</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita LC</th><th tabindex="0" data-field="roas" data-fmt="xw">ROAS LC</th></tr></thead>
           <tbody data-draw="tbl"></tbody></table></div>
       </div>
     </div>
@@ -551,30 +570,71 @@ td .tp.vid { background: var(--ev-orange); }
   const iso = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   const shift = (s, n) => { const [y, m, d] = s.split('-').map(Number); const x = new Date(y, m - 1, d); x.setDate(x.getDate() + n); return iso(x); };
   const minusYear = (s) => { const [y, m, d] = s.split('-').map(Number); const x = new Date(y - 1, m - 1, Math.min(d, new Date(y - 1, m, 0).getDate())); return iso(x); };
-  function janela(p) {
+  /* Personalizado: até 93 dias, do primeiro dia de 2024 até hoje (consultas maiores ficam lentas no Redshift) */
+  const PERS_MAX_DIAS = 93, PERS_MIN = '2024-01-01';
+  const dias = (a, b) => Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5) + 1;
+  function persValido(ini, fim) {
+    const hoje = iso(new Date()), D = /^\d{4}-\d{2}-\d{2}$/;
+    if (!D.test(ini || '') || !D.test(fim || '')) return 'Escolha a data de início e a de fim.';
+    if (ini > fim) return 'A data de início precisa ser antes da de fim.';
+    if (fim > hoje) return 'A data de fim não pode ser depois de hoje.';
+    if (ini < PERS_MIN) return 'Use datas a partir de 01/01/2024.';
+    if (dias(ini, fim) > PERS_MAX_DIAS) return 'Escolha até ' + PERS_MAX_DIAS + ' dias.';
+    return '';
+  }
+  function janela(p, persIni, persFim) {
     const hoje = iso(new Date());
     const ontem = shift(hoje, -1);
     const mtdIni = hoje.slice(0, 8) + '01';
     const mtdFim = ontem < mtdIni ? hoje : ontem;
+    let ini, fim;
+    if (p === 'pers') {
+      if (persValido(persIni, persFim)) { const c = dash.params(); persIni = c.periodo === 'pers' ? c.ini : mtdIni; persFim = c.periodo === 'pers' ? c.fim : mtdFim; }
+      ini = persIni; fim = persFim;
+    } else if (p === 'ontem') { ini = fim = ontem; }
+    else if (p === 'mtd') { ini = mtdIni; fim = mtdFim; }
+    else { p = 'hoje'; ini = fim = hoje; }
     /* mês do Plano de Vendas: o servidor acha a planilha 'MM. M-1 Plano de Vendas MmmAA' nas pastas do Drive */
-    const planoMes = (p === 'ontem' ? ontem : p === 'mtd' ? mtdFim : hoje).slice(0, 7);
-    const base = { periodo: p, pago_in: p === 'hoje' ? '(0,1)' : '(1)', hoje, sem_passada: shift(hoje, -7), mtd_ini: mtdIni, mtd_fim: mtdFim, ini_email: shift(p === 'ontem' ? ontem : p === 'mtd' ? mtdIni : hoje, -3) };
-    if (p === 'ontem') return Object.assign(base, { ini: ontem, fim: ontem, ini_yoy: minusYear(ontem), fim_yoy: minusYear(ontem), meta_preset: 'yesterday', plano_mes: planoMes });
-    if (p === 'mtd') return Object.assign(base, { ini: mtdIni, fim: mtdFim, ini_yoy: minusYear(mtdIni), fim_yoy: minusYear(mtdFim), meta_preset: 'this_month', plano_mes: planoMes });
-    return Object.assign(base, { ini: hoje, fim: hoje, ini_yoy: minusYear(hoje), fim_yoy: minusYear(hoje), meta_preset: 'today', plano_mes: planoMes });
+    return { periodo: p, pago_in: p === 'hoje' ? '(0,1)' : '(1)', hoje, sem_passada: shift(hoje, -7), mtd_ini: mtdIni, mtd_fim: mtdFim, ini_email: shift(ini, -3),
+      ini, fim, ini_yoy: minusYear(ini), fim_yoy: minusYear(fim), plano_mes: fim.slice(0, 7) };
   }
+  /* como cada período se comporta na página: Personalizado de um dia só é como Ontem; de vários dias, como o mês */
+  const tipo = (P) => (P.periodo === 'pers' ? (P.ini === P.fim ? 'ontem' : 'mtd') : P.periodo || 'hoje');
   window.WR_janela = janela;
+  window.WR_tipo = tipo;
+  const box = document.getElementById('pers-box'), pIni = document.getElementById('pers-ini'), pFim = document.getElementById('pers-fim'), pMsg = box.querySelector('.pers-msg');
+  pIni.max = pFim.max = iso(new Date()); pIni.min = pFim.min = PERS_MIN;
+  const linkPers = (P) => { try { history.replaceState(null, '', '#pers-' + P.ini + '_' + P.fim); } catch (e) { /* ignora */ } };
   dash.setParams(janela(dash.params().periodo || 'hoje'));
-  document.querySelectorAll('.wr .tab').forEach((b) => b.addEventListener('click', () => { dash.setParams(janela(b.dataset.p)); dash.setLink(b.id); }));
+  document.querySelectorAll('.wr .tab').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.p === 'pers') {
+      const c = dash.params();
+      if (!pIni.value) pIni.value = c.ini; if (!pFim.value) pFim.value = c.fim;
+      box.hidden = false; pMsg.textContent = '';
+      const P = janela('pers', pIni.value, pFim.value); dash.setParams(P); linkPers(P); pIni.focus();
+      return;
+    }
+    box.hidden = true; dash.setParams(janela(b.dataset.p)); dash.setLink(b.id);
+  }));
+  box.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const erro = persValido(pIni.value, pFim.value);
+    pMsg.textContent = erro;
+    if (erro) return;
+    const P = janela('pers', pIni.value, pFim.value); dash.setParams(P); linkPers(P);
+  });
   dash.onData(() => {
-    const p = dash.params().periodo || 'hoje';
+    const P = dash.params(), p = P.periodo || 'hoje', t = tipo(P);
     document.querySelectorAll('.wr .tab').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === p)));
-    const show = { 'c-dia': p !== 'mtd', 'c-mtd': p === 'mtd', 'c-hoje': p === 'hoje', 'c-ontem': p === 'ontem', 'c-nohoje': p !== 'hoje' };
+    box.hidden = p !== 'pers';
+    const show = { 'c-dia': t !== 'mtd', 'c-mtd': t === 'mtd', 'c-hoje': t === 'hoje', 'c-ontem': t === 'ontem', 'c-nohoje': t !== 'hoje' };
     Object.keys(show).forEach((c) => document.querySelectorAll('.wr .' + c).forEach((el) => { el.hidden = !show[c]; }));
-    /* Super Meta: o card só aparece no mês que tem Super Meta cadastrada (SUPER_META em data.js) */
+    /* o CPM por dia vem do Meta só para o mês corrente: no Personalizado ele não aparece */
+    const cpm = document.getElementById('meta-cpm'); if (cpm && p === 'pers') cpm.hidden = true;
+    /* Super Meta: o card só aparece em Mês até ontem e no mês que tem Super Meta cadastrada (SUPER_META em data.js) */
     const sm = dash.data('super_meta');
-    document.querySelectorAll('.wr .tile.super').forEach((el) => { if (sm.status === 'ok' && !sm.data.length) el.hidden = true; });
-    /* ids das 5 campanhas de email com mais receita LC, para buscar enviados e open rate no Insider (nas três abas) */
+    document.querySelectorAll('.wr .tile.super').forEach((el) => { if (p !== 'mtd' || (sm.status === 'ok' && !sm.data.length)) el.hidden = true; });
+    /* ids das 5 campanhas de email com mais receita LC, para buscar enviados e open rate no Insider (em todos os períodos) */
     const ce = dash.data('camp_email');
     if (ce.status === 'ok') {
       const ids = ce.data.map((r) => r.campaign_id).filter(Boolean).map(String);
@@ -583,8 +643,11 @@ td .tp.vid { background: var(--ev-orange); }
       if (Object.keys(upd).length) dash.setParams(upd);
     }
   });
-  const named = location.hash && document.getElementById(location.hash.slice(1));
-  if (named && named.classList.contains('tab')) dash.setParams(janela(named.dataset.p));
+  /* link direto: #tab-ontem, #tab-mtd ou #pers-AAAA-MM-DD_AAAA-MM-DD */
+  const mp = /^#pers-(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})$/.exec(location.hash || '');
+  if (mp && !persValido(mp[1], mp[2])) { pIni.value = mp[1]; pFim.value = mp[2]; dash.setParams(janela('pers', mp[1], mp[2])); }
+  const named = !mp && location.hash && document.getElementById(location.hash.slice(1));
+  if (named && named.classList.contains('tab') && named.dataset.p !== 'pers') dash.setParams(janela(named.dataset.p));
 })();
 </script>
 
@@ -872,7 +935,7 @@ document.querySelectorAll('.wr table thead').forEach((thead) => {
     const rows = d.data || [];
     const val = (o, k) => (k === 'cm2' ? cm2Of(C, o.chaves) : o[k]);
     const sortK = (arr) => (!S.sort ? arr : arr.slice().sort((a, b) => { const va = val(a, S.sort), vb = val(b, S.sort); if (va == null && vb == null) return 0; if (va == null) return 1; if (vb == null) return -1; return (va - vb) * S.dir; }));
-    const name = (o) => esc(o.canal) + (o.pendente ? '<span class="pend" title="Investimento sem lançamento em algum dia do período">invest pendente</span>' : '');
+    const name = (o) => esc(o.canal) + (o.canal === 'WhatsApp' ? '<sup class="ast" title="O custo nesta tabela não considera o investimento em réguas">*</sup>' : '') + (o.pendente ? '<span class="pend" title="Investimento sem lançamento em algum dia do período">invest pendente</span>' : '');
     let body = '';
     rows.filter((r) => r.nivel === 'grupo').forEach((g) => {
       const kids = sortK(rows.filter((r) => r.nivel === 'canal' && r.grupo === g.grupo && !empty(r)));
