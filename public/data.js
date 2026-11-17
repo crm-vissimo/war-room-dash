@@ -580,7 +580,7 @@ dash.calc('camp_email_full', {
 });
 dash.calc('whats_resumo', {
   title: 'WhatsApp no período (Insider)',
-  description: 'Soma dos disparos de WhatsApp do Insider; investimento = entregues × R$ 0,3991 (mensagem que não entrega não é cobrada); entregues comparados com a média diária do mês até ontem.',
+  description: 'Soma dos disparos de WhatsApp do Insider, com as réguas (mensagens das jornadas do Architect); investimento = entregues × R$ 0,3991 (mensagem que não entrega não é cobrada); entregues comparados com a média diária do mês até ontem.',
   inputs: ['whats_insider', 'whats_insider_mes'],
   fn: (whats_insider, whats_insider_mes) => {
     const CUSTO = 0.3991;
