@@ -346,7 +346,7 @@ td .tp.vid { background: var(--ev-orange); }
     <div class="card" id="sku-top">
       <div class="card-h">
         <div><h3>Top 5 SKUs por faixa de preço</h3>
-        <p class="cap">SKUs com mais receita (produto + frete) no período, dentro da faixa escolhida. Share = participação na receita total do período. Estoque = garrafas livres no depósito do e-commerce (SAP, Evino B2C, foto do dia); cobertura = estoque ÷ garrafas vendidas por dia no período.</p></div>
+        <p class="cap">SKUs com mais receita (produto + frete) no período, dentro da faixa escolhida. Share = participação na receita total do período. Estoque = estoque vendável do SKU no Magento (dim stock, total Evino salable stock); cobertura = estoque ÷ garrafas vendidas por dia no período.</p></div>
         <div class="seg" role="group" aria-label="Faixa de preço"><button type="button" class="fx-sku" data-v="0 - 30" aria-pressed="true">0 - 30</button><button type="button" class="fx-sku" data-v="30 - 50" aria-pressed="false">30 - 50</button><button type="button" class="fx-sku" data-v="50 - 100" aria-pressed="false">50 - 100</button><button type="button" class="fx-sku" data-v="Acima de 100" aria-pressed="false">Acima de 100</button><button type="button" class="fx-sku" data-v="Outros" aria-pressed="false">Outros</button></div>
       </div>
       <div class="tw"><table data-source="sku_top" data-row-key="sku" data-filter-btn=".fx-sku" data-filter-col="faixa">
