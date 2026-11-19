@@ -18,6 +18,8 @@
     faixa_vendas: ['ini', 'fim', 'pago_in'],
     canal_sku: ['ini', 'fim', 'pago_in'],
     kits_google: ['ini', 'fim', 'pago_in'],
+    cm2_meta: ['ini', 'fim'],
+    estoque_sku: [],
     lc_agg: ['ini', 'fim', 'pago_in'],
     meta_diario_ly: [],
     canais_diario: [],

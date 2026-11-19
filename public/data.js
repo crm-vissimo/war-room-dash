@@ -820,9 +820,12 @@ dash.loader('email_lista', {
 
 dash.calc('sku_top', {
   title: 'Top 5 SKUs por faixa de preço',
-  description: 'Os 5 SKUs de maior receita (produto + frete) em cada faixa no período, com share na receita total, garrafas, PMV (receita sem frete ÷ garrafas) e CM2 % (CM2 ÷ receita com frete).',
-  inputs: ['faixa_vendas'],
-  fn: (faixa_vendas) => {
+  description: 'Os 5 SKUs de maior receita (produto + frete) em cada faixa no período, com share na receita total, garrafas, PMV (receita sem frete ÷ garrafas), CM2 % (CM2 ÷ receita com frete), estoque livre no depósito do e-commerce (SAP, Evino B2C, foto do dia) e cobertura = estoque ÷ garrafas vendidas por dia no período (Esgotado com estoque zerado, Crítico até 3 dias, Atenção abaixo de 7).',
+  inputs: ['faixa_vendas', 'estoque_sku'],
+  fn: (faixa_vendas, estoque_sku) => {
+    const EST = new Map(estoque_sku.map((r) => [String(r.sku).replace(/^0+/, ''), r.estoque]));
+    const dias = faixa_vendas.length ? Math.round((Date.parse(faixa_vendas[0].fim) - Date.parse(faixa_vendas[0].ini)) / 864e5) + 1 : 1;
+    const comEstoque = estoque_sku.length > 0;
     const ORD = ['0 - 30', '30 - 50', '50 - 100', 'Acima de 100', 'Outros'];
     const norm = (c) => { const k = String(c || '').trim().toLowerCase(); return ORD.find((o) => o.toLowerCase() === k) || 'Outros'; };
     const tot = faixa_vendas.reduce((s, r) => s + r.rec + r.frete, 0);
@@ -830,7 +833,10 @@ dash.calc('sku_top', {
     ORD.forEach((f) => {
       faixa_vendas.filter((r) => norm(r.categoria) === f).sort((a, b) => b.rec + b.frete - (a.rec + a.frete)).slice(0, 5).forEach((r, i) => {
         const rf = r.rec + r.frete;
-        out.push({ pos: i + 1, sku: r.sku, nome: r.nome || r.sku, faixa: f, receita: rf, share: tot ? rf / tot : null, garrafas: r.qtd, pmv: r.qtd ? (r.rec_raw != null ? r.rec_raw : r.rec) / r.qtd : null, cm2_pct: rf ? r.cm2 / rf : null });
+        const est = comEstoque ? (EST.get(String(r.sku).replace(/^0+/, '')) || 0) : null;
+        const porDia = r.qtd / dias, cob = est != null && porDia > 0 ? est / porDia : null;
+        const alerta = est == null ? null : est <= 0 ? 'Esgotado' : cob == null ? 'OK' : cob <= 3 ? 'Crítico' : cob < 7 ? 'Atenção' : 'OK';
+        out.push({ pos: i + 1, sku: r.sku, nome: r.nome || r.sku, faixa: f, receita: rf, share: tot ? rf / tot : null, garrafas: r.qtd, pmv: r.qtd ? (r.rec_raw != null ? r.rec_raw : r.rec) / r.qtd : null, cm2_pct: rf ? r.cm2 / rf : null, estoque: est, cobertura_dias: cob, alerta });
       });
     });
     return out;
