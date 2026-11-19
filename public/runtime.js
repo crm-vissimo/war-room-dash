@@ -20,6 +20,7 @@
     kits_google: ['ini', 'fim', 'pago_in'],
     cm2_meta: ['ini', 'fim'],
     estoque_sku: [],
+    estoque_info: [],
     lc_agg: ['ini', 'fim', 'pago_in'],
     meta_diario_ly: [],
     canais_diario: [],
