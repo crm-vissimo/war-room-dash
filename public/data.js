@@ -820,7 +820,7 @@ dash.loader('email_lista', {
 
 dash.calc('sku_top', {
   title: 'Top 5 SKUs por faixa de preço',
-  description: 'Os 5 SKUs de maior receita (produto + frete) em cada faixa no período, com share na receita total, garrafas, PMV (receita sem frete ÷ garrafas), CM2 % (CM2 ÷ receita com frete), estoque livre no depósito do e-commerce (SAP, Evino B2C, foto do dia) e cobertura = estoque ÷ garrafas vendidas por dia no período (Esgotado com estoque zerado, Crítico até 3 dias, Atenção abaixo de 7).',
+  description: 'Os 5 SKUs de maior receita (produto + frete) em cada faixa no período, com share na receita total, garrafas, PMV (receita sem frete ÷ garrafas), CM2 % (CM2 ÷ receita com frete), estoque vendável do SKU no Magento (dim stock, total Evino salable stock) e cobertura = estoque ÷ garrafas vendidas por dia no período (Esgotado com estoque zerado, Crítico até 3 dias, Atenção abaixo de 7).',
   inputs: ['faixa_vendas', 'estoque_sku'],
   fn: (faixa_vendas, estoque_sku) => {
     const EST = new Map(estoque_sku.map((r) => [String(r.sku).replace(/^0+/, ''), r.estoque]));
