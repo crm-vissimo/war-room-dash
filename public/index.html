@@ -346,11 +346,11 @@ td .tp.vid { background: var(--ev-orange); }
     <div class="card" id="sku-top">
       <div class="card-h">
         <div><h3>Top 5 SKUs por faixa de preço</h3>
-        <p class="cap">SKUs com mais receita (produto + frete) no período, dentro da faixa escolhida. Share = participação na receita total do período.</p></div>
+        <p class="cap">SKUs com mais receita (produto + frete) no período, dentro da faixa escolhida. Share = participação na receita total do período. Estoque = garrafas livres no depósito do e-commerce (SAP, Evino B2C, foto do dia); cobertura = estoque ÷ garrafas vendidas por dia no período.</p></div>
         <div class="seg" role="group" aria-label="Faixa de preço"><button type="button" class="fx-sku" data-v="0 - 30" aria-pressed="true">0 - 30</button><button type="button" class="fx-sku" data-v="30 - 50" aria-pressed="false">30 - 50</button><button type="button" class="fx-sku" data-v="50 - 100" aria-pressed="false">50 - 100</button><button type="button" class="fx-sku" data-v="Acima de 100" aria-pressed="false">Acima de 100</button><button type="button" class="fx-sku" data-v="Outros" aria-pressed="false">Outros</button></div>
       </div>
       <div class="tw"><table data-source="sku_top" data-row-key="sku" data-filter-btn=".fx-sku" data-filter-col="faixa">
-        <thead><tr><th tabindex="0" data-field="pos" data-fmt="int">#<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="nome" data-fmt="txt">Produto</th><th tabindex="0" data-field="sku" data-fmt="txt">SKU</th><th tabindex="0" data-field="receita" data-fmt="brl" aria-sort="descending">Receita</th><th tabindex="0" data-field="share" data-fmt="pct">Share</th><th tabindex="0" data-field="garrafas" data-fmt="int">Garrafas</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="cm2_pct" data-fmt="cm2">CM2 %</th></tr></thead>
+        <thead><tr><th tabindex="0" data-field="pos" data-fmt="int">#<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="nome" data-fmt="txt">Produto</th><th tabindex="0" data-field="sku" data-fmt="txt">SKU</th><th tabindex="0" data-field="receita" data-fmt="brl" aria-sort="descending">Receita</th><th tabindex="0" data-field="share" data-fmt="pct">Share</th><th tabindex="0" data-field="garrafas" data-fmt="int">Garrafas</th><th tabindex="0" data-field="pmv" data-fmt="brl2">PMV</th><th tabindex="0" data-field="cm2_pct" data-fmt="cm2">CM2 %</th><th tabindex="0" data-field="estoque" data-fmt="int">Estoque (gf)</th><th tabindex="0" data-field="cobertura_dias" data-fmt="dias">Cobertura</th><th tabindex="0" data-field="alerta" data-fmt="alerta">Status</th></tr></thead>
         <tbody data-draw="tbl"></tbody></table></div>
     </div>
 
