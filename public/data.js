@@ -1013,7 +1013,7 @@ dash.calc('kits_grupo', {
 /* ---------- Cupons e regras de desconto ---------- */
 /* dono da regra = prefixo entre colchetes do nome no Magento ([POC], [CRM], [PAR]…); sem regra = "Sem cupom" */
 const donoRegra = (r) => { if (!r) return 'Sem cupom'; const m = /^\s*\[([A-Za-z]+)\]/.exec(r); return m ? m[1].toUpperCase() : 'Outros'; };
-const DONO_NOME = { POC: 'POC (Promo/Comercial)', CRM: 'CRM', PAR: 'Parcerias', EXT: 'Influenciadores/Externo', SAC: 'SAC', BRD: 'Branding', 'Sem cupom': 'Sem cupom', Outros: 'Outros' };
+const DONO_NOME = { POC: 'POC (Promo/Comercial)', CRM: 'CRM', PAR: 'Parcerias', EXT: 'Influenciadores/Externo', SAC: 'SAC', BRD: 'Branding', CLU: 'Clube', RHU: 'RH', BIZDEV: 'BizDev', 'Sem cupom': 'Sem cupom', Outros: 'Outros' };
 dash.calc('cupons_resumo', {
   title: 'Cupons no período',
   description: 'Receita (produto + frete) com e sem regra de desconto, share da receita com cupom, desconto concedido (discount_amount) e desconto médio = desconto ÷ (receita sem frete + desconto) nos pedidos com cupom, CM2 % com e sem cupom, ticket médio com e sem cupom (receita ÷ pedidos) e quantas regras foram usadas. Mesmo recorte de pedidos da receita (Hoje: boleto condition).',
@@ -1037,7 +1037,7 @@ dash.calc('cupons_dono', {
     const D = {}; cupons.forEach((r) => { const d = donoRegra(r.regra); const o = D[d] || (D[d] = { receita: 0, desconto: 0, pedidos: 0 }); o.receita += r.rec + r.frete; o.desconto += r.desconto; o.pedidos += r.pedidos; });
     const tot = Object.values(D).reduce((a, o) => a + o.receita, 0);
     if (!tot) return [];
-    const ORD = ['Sem cupom', 'POC', 'CRM', 'PAR', 'EXT', 'SAC', 'BRD', 'Outros'];
+    const ORD = ['Sem cupom', 'POC', 'CRM', 'PAR', 'EXT', 'SAC', 'BRD', 'CLU', 'RHU', 'BIZDEV', 'Outros'];
     return Object.keys(D).sort((a, b) => (ORD.indexOf(a) < 0 ? 99 : ORD.indexOf(a)) - (ORD.indexOf(b) < 0 ? 99 : ORD.indexOf(b))).map((d) => ({ dono: d, nome: DONO_NOME[d] || d, receita: D[d].receita, share: D[d].receita / tot, desconto: D[d].desconto, pedidos: D[d].pedidos }));
   },
 });
@@ -1051,7 +1051,7 @@ dash.calc('cupons_top', {
       const rf = r.rec + r.frete;
       return { regra: r.regra.replace(/^\s*\[[A-Za-z]+\]\s*/, ''), dono: donoRegra(r.regra), codigo: r.codigos > 3 ? r.codigos + ' códigos' : r.codigo_top, pedidos: r.pedidos, receita: rf, share: tot ? rf / tot : null,
         desconto_pct: r.rec + r.desconto ? r.desconto / (r.rec + r.desconto) : null, cm2_pct: rf ? r.cm2 / rf : null, ticket: r.pedidos ? rf / r.pedidos : null };
-    }).sort((a, b) => b.receita - a.receita).slice(0, 10);
+    }).sort((a, b) => b.receita - a.receita).slice(0, 15);
   },
 });
 
