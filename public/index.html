@@ -100,6 +100,7 @@
 .wr .fn-pill { fill: #fff; stroke: var(--ev-red); stroke-width: 1; }
 .wr .fn-pt { font-size: 12px; font-weight: 700; fill: var(--ev-dark); }
 .wr .fn-tab td:first-child { white-space: nowrap; font-weight: 600; }
+.wr .funil.fn-erro { background: var(--ev-cream); border-radius: 14px; padding: 14px 16px; font-size: 14px; color: var(--ev-wine); }
 .wr .fn-lado { display: grid; gap: 12px; min-width: 0; }
 .wr .fn-sub { font-family: var(--f-ret); font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--ev-wine); }
 .wr .fn-lado .chart { min-height: 0; display: grid; gap: 8px; }
@@ -418,9 +419,10 @@ td .tp.vid { background: var(--ev-orange); }
         <div class="tile"><span class="lb">Ticket com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="ticket_com" data-fmt="brl2">—</span><span class="s">sem cupom: <span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="ticket_sem" data-fmt="brl2">—</span></span></div>
       </div>
       <div class="chart share-canais" data-draw="ch_cupons_dono" data-source="cupons_dono"></div>
-      <div class="tw"><table class="nm-full" data-source="cupons_top" data-row-key="regra">
+      <div class="tw"><table class="nm-full" data-source="cupons_top" data-row-key="regra" data-limit="5" data-limit-max="15">
         <thead><tr><th tabindex="0" data-field="regra">Regra<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="dono" data-fmt="txt">Dono</th><th tabindex="0" data-field="codigo" data-fmt="txt">Código</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita</th><th tabindex="0" data-field="share" data-fmt="pct">Share</th><th tabindex="0" data-field="desconto_pct" data-fmt="pct">Desconto</th><th tabindex="0" data-field="cm2_pct" data-fmt="cm2">CM2 %</th><th tabindex="0" data-field="ticket" data-fmt="brl2">Ticket</th></tr></thead>
         <tbody data-draw="tbl"></tbody></table></div>
+      <button type="button" class="more c-mtd" aria-expanded="false" hidden><span class="m-closed">Ver até o top 15 ▾</span><span class="m-open" hidden>Mostrar só o top 5 ▴</span></button>
     </div>
 
     <div class="card" id="funil">
@@ -851,7 +853,7 @@ dash.draw('tbl', (tb) => {
   }
   if (table.dataset.limit) {
     const btn = table.closest('.card') && table.closest('.card').querySelector('.more');
-    const open = btn && btn.getAttribute('aria-expanded') === 'true';
+    const open = btn && !btn.hidden && btn.getAttribute('aria-expanded') === 'true';
     rows = rows.slice(0, open ? +(table.dataset.limitMax || 15) : +table.dataset.limit);
   }
   const maxRec = {};
@@ -1180,8 +1182,8 @@ dash.draw('ch_cupons_dono', (el) => {
   const d = dash.data('cupons_dono');
   el.replaceChildren();
   if (d.status !== 'ok' || !d.data.length) return;
-  const COR = { 'Sem cupom': '#bdbdbd', POC: '#9a7cea', CRM: '#3d6fc8', PAR: '#b23aa5', EXT: '#ee7a50', SAC: '#5b2ec4', BRD: '#6fd8d2', Outros: '#b9a19b' };
-  const TXT = { 'Sem cupom': '#270d0f', PAR: '#fff', POC: '#fff', CRM: '#fff', EXT: '#270d0f', SAC: '#fff', BRD: '#270d0f', Outros: '#270d0f' };
+  const COR = { 'Sem cupom': '#bdbdbd', POC: '#9a7cea', CRM: '#3d6fc8', PAR: '#b23aa5', EXT: '#ee7a50', SAC: '#5b2ec4', BRD: '#6fd8d2', CLU: '#f5c42e', RHU: '#8a7a76', BIZDEV: '#2e8b57', Outros: '#b9a19b' };
+  const TXT = { 'Sem cupom': '#270d0f', PAR: '#fff', POC: '#fff', CRM: '#fff', EXT: '#270d0f', SAC: '#fff', BRD: '#270d0f', CLU: '#270d0f', RHU: '#fff', BIZDEV: '#fff', Outros: '#270d0f' };
   const bar = document.createElement('div'); bar.className = 'stk';
   d.data.forEach((r) => {
     if (r.share <= 0) return;
@@ -1198,7 +1200,12 @@ dash.draw('ch_cupons_dono', (el) => {
 dash.draw('funil', (el) => {
   const d = dash.data('funil');
   el.replaceChildren();
-  if (d.status !== 'ok' || !d.data.length) { el.textContent = d.status === 'error' ? 'Não consegui ler a Tannat agora.' : '—'; return; }
+  if (d.status !== 'ok' || !d.data.length) {
+    const sem = d.status === 'error' && /permission denied/i.test(d.error || '');
+    el.textContent = d.status !== 'error' ? '—' : sem ? 'O usuário do Redshift do dash ainda não tem acesso ao schema vissimo_bi, onde ficam as views da Tannat. O funil aparece assim que o acesso for liberado.' : 'Não consegui ler a Tannat agora (' + String(d.error || '').slice(0, 120) + ').';
+    el.classList.add('fn-erro'); return;
+  }
+  el.classList.remove('fn-erro');
   const r0 = d.data[0], P = dash.params(), dia = P.ini === P.fim;
   const head = document.createElement('div'); head.className = 'funil-conv';
   head.innerHTML = '<span class="lb">Conversão</span><b></b><span class="s"></span>';
