@@ -21,6 +21,7 @@
     cm2_meta: ['ini', 'fim'],
     estoque_sku: [],
     cupons: ['ini', 'fim', 'pago_in'],
+    receita_plataforma: ['ini', 'fim', 'pago_in'],
     tannat_funil: ['ini', 'fim'],
     tannat_funil_mes: ['mtd_ini', 'mtd_fim'],
     lc_agg: ['ini', 'fim', 'pago_in'],

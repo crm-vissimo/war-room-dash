@@ -100,6 +100,12 @@
 .wr .fn-pill { fill: #fff; stroke: var(--ev-red); stroke-width: 1; }
 .wr .fn-pt { font-size: 12px; font-weight: 700; fill: var(--ev-dark); }
 .wr .fn-tab td:first-child { white-space: nowrap; font-weight: 600; }
+.wr .fn-lado { display: grid; gap: 12px; min-width: 0; }
+.wr .fn-sub { font-family: var(--f-ret); font-weight: 700; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--ev-wine); }
+.wr .fn-lado .chart { min-height: 0; display: grid; gap: 8px; }
+.wr .ps-row { display: grid; grid-template-columns: 4.5rem 1fr; align-items: center; gap: 10px; }
+.wr .ps-lb { font-size: 13px; font-weight: 600; color: var(--ev-dark); }
+.wr .fn-lado .lg-canais { margin: 2px 0 0; }
 /* Hoje: o card do mês até agora fica abaixo do atingimento do dia, na mesma coluna e mais discreto (fundo claro, número menor) */
 /* Hoje: atingimento do dia e do mês num bloco só, da altura do gráfico ao lado: o do dia em cima (ocupa o espaço que
    sobra) e o do mês numa faixa clara e fina embaixo, colada nele */
@@ -409,7 +415,7 @@ td .tp.vid { background: var(--ev-orange); }
         <div class="tile"><span class="lb">Receita com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="share_com" data-fmt="pct">—</span><span class="s"><span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="receita_com" data-fmt="brl">—</span> da receita do período</span></div>
         <div class="tile"><span class="lb">Desconto concedido</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="desconto" data-fmt="brl">—</span><span class="s">desconto médio de <span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="desconto_pct" data-fmt="pct">—</span></span></div>
         <div class="tile"><span class="lb">CM2 com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="cm2_com" data-fmt="cm2">—</span><span class="s">sem cupom: <span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="cm2_sem" data-fmt="cm2">—</span></span></div>
-        <div class="tile"><span class="lb">Pedidos com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="pedidos_com" data-fmt="int">—</span><span class="s"><span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="regras" data-fmt="int">—</span> regras usadas</span></div>
+        <div class="tile"><span class="lb">Ticket com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="ticket_com" data-fmt="brl2">—</span><span class="s">sem cupom: <span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="ticket_sem" data-fmt="brl2">—</span></span></div>
       </div>
       <div class="chart share-canais" data-draw="ch_cupons_dono" data-source="cupons_dono"></div>
       <div class="tw"><table class="nm-full" data-source="cupons_top" data-row-key="regra">
@@ -419,12 +425,16 @@ td .tp.vid { background: var(--ev-orange); }
 
     <div class="card" id="funil">
       <h3>Conversão e funil · site e app (Tannat)</h3>
-      <p class="cap">Sessões Evino sem bots na Tannat. Conversão = sessões com pedido ÷ sessões; cada etapa mostra o % das sessões e o % da etapa anterior. A etapa de checkout fica de fora: na Tannat ela não é contada por sessão. Os pedidos aqui são os que a Tannat registra na sessão, não os pedidos pagos do Magento.</p>
+      <p class="cap">Sessões Evino sem bots na Tannat. Conversão = sessões com pedido ÷ sessões; cada etapa mostra o % das sessões e o % da etapa anterior. A etapa de checkout fica de fora: na Tannat ela não é contada por sessão. Os pedidos do funil são os que a Tannat registra na sessão; receita e ticket por plataforma vêm do Magento (pedidos pagos, plataforma do pedido).</p>
       <div class="funil-wrap">
         <div class="funil" data-draw="funil" data-source="funil"></div>
-        <div class="tw"><table class="fn-tab" data-source="funil_plataforma" data-row-key="plataforma">
-          <thead><tr><th tabindex="0" data-field="plataforma">Plataforma<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="sessoes" aria-sort="descending" data-fmt="int">Sessões</th><th tabindex="0" data-field="share" data-fmt="pct">Share</th><th tabindex="0" data-field="pdp_pct" data-fmt="pct">Viram produto</th><th tabindex="0" data-field="carrinho_pct" data-fmt="pct">Carrinho</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="conversao" data-fmt="conv">Conversão</th><th tabindex="0" data-field="bounce" data-fmt="pct">Bounce</th></tr></thead>
-          <tbody data-draw="tbl"></tbody></table></div>
+        <div class="fn-lado">
+          <div class="fn-sub">Share por plataforma: sessões × receita</div>
+          <div class="chart" data-draw="ch_plat_share" data-source="funil_plataforma"></div>
+          <div class="tw"><table class="fn-tab" data-source="funil_plataforma" data-row-key="plataforma">
+            <thead><tr><th tabindex="0" data-field="plataforma">Plataforma<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="sessoes" data-fmt="int">Sessões</th><th tabindex="0" data-field="conversao" data-fmt="conv">Conversão</th><th tabindex="0" data-field="bounce" data-fmt="pct">Bounce</th><th tabindex="0" data-field="receita" aria-sort="descending" data-fmt="brl">Receita</th><th tabindex="0" data-field="ticket" data-fmt="brl2">Ticket</th></tr></thead>
+            <tbody data-draw="tbl"></tbody></table></div>
+        </div>
       </div>
     </div>
 
@@ -1221,6 +1231,31 @@ dash.draw('funil', (el) => {
     }
   });
   el.appendChild(svg);
+});
+/* Plataforma: duas barras empilhadas (share das sessões e da receita) com as mesmas cores */
+dash.draw('ch_plat_share', (el) => {
+  const d = dash.data('funil_plataforma');
+  el.replaceChildren();
+  if (d.status !== 'ok' || !d.data.length) return;
+  const rows = d.data.filter((r) => r.plataforma !== 'Total');
+  const COR = { 'App Android': ['#6fd8d2', '#270d0f'], 'App iOS': ['#3d6fc8', '#fff'], 'App (outros)': ['#b9a19b', '#270d0f'], 'Site mobile': ['#ee7a50', '#270d0f'], 'Site desktop': ['#9a7cea', '#fff'], Outros: ['#bdbdbd', '#270d0f'] };
+  [['Sessões', 'share'], ['Receita', 'share_receita']].forEach(([nm, k]) => {
+    const row = document.createElement('div'); row.className = 'ps-row';
+    const lb = document.createElement('span'); lb.className = 'ps-lb'; lb.textContent = nm;
+    const bar = document.createElement('div'); bar.className = 'stk';
+    rows.forEach((r) => {
+      const v = r[k]; if (!(v > 0)) return;
+      const c = COR[r.plataforma] || COR.Outros;
+      const s = document.createElement('span'); s.style.width = (v * 100) + '%'; s.style.background = c[0]; s.style.color = c[1];
+      s.title = r.plataforma + ': ' + WR.F.pct(v) + (k === 'share' ? ' das sessões · ' + WR.F.int(r.sessoes) : ' da receita · ' + WR.F.brl(r.receita));
+      if (v >= 0.07) s.textContent = WR.F.pct0(v);
+      bar.appendChild(s);
+    });
+    row.append(lb, bar); el.appendChild(row);
+  });
+  const lg = document.createElement('ul'); lg.className = 'lg-canais';
+  rows.forEach((r) => { const li = document.createElement('li'); li.innerHTML = '<span class="sw"></span>'; li.firstChild.style.background = (COR[r.plataforma] || COR.Outros)[0]; li.append(r.plataforma); lg.appendChild(li); });
+  el.appendChild(lg);
 });
 dash.draw('faixa_nota', (el) => {
   const d = dash.data('faixas');

@@ -1016,7 +1016,7 @@ const donoRegra = (r) => { if (!r) return 'Sem cupom'; const m = /^\s*\[([A-Za-z
 const DONO_NOME = { POC: 'POC (Promo/Comercial)', CRM: 'CRM', PAR: 'Parcerias', EXT: 'Influenciadores/Externo', SAC: 'SAC', BRD: 'Branding', 'Sem cupom': 'Sem cupom', Outros: 'Outros' };
 dash.calc('cupons_resumo', {
   title: 'Cupons no período',
-  description: 'Receita (produto + frete) com e sem regra de desconto, share da receita com cupom, desconto concedido (discount_amount) e desconto médio = desconto ÷ (receita sem frete + desconto) nos pedidos com cupom, CM2 % com e sem cupom e quantas regras foram usadas. Mesmo recorte de pedidos da receita (Hoje: boleto condition).',
+  description: 'Receita (produto + frete) com e sem regra de desconto, share da receita com cupom, desconto concedido (discount_amount) e desconto médio = desconto ÷ (receita sem frete + desconto) nos pedidos com cupom, CM2 % com e sem cupom, ticket médio com e sem cupom (receita ÷ pedidos) e quantas regras foram usadas. Mesmo recorte de pedidos da receita (Hoje: boleto condition).',
   inputs: ['cupons'],
   fn: (cupons) => {
     if (!cupons.length) return [];
@@ -1025,7 +1025,8 @@ dash.calc('cupons_resumo', {
     const recCom = s(com, 'rec') + s(com, 'frete'), recSem = s(sem, 'rec') + s(sem, 'frete'), tot = recCom + recSem;
     const desc = s(com, 'desconto');
     return [{ receita_com: recCom, receita_sem: recSem, share_com: tot ? recCom / tot : null, desconto: desc, desconto_pct: s(com, 'rec') + desc ? desc / (s(com, 'rec') + desc) : null,
-      cm2_com: recCom ? s(com, 'cm2') / recCom : null, cm2_sem: recSem ? s(sem, 'cm2') / recSem : null, pedidos_com: s(com, 'pedidos'), regras: com.length }];
+      cm2_com: recCom ? s(com, 'cm2') / recCom : null, cm2_sem: recSem ? s(sem, 'cm2') / recSem : null, pedidos_com: s(com, 'pedidos'), regras: com.length,
+      ticket_com: s(com, 'pedidos') ? recCom / s(com, 'pedidos') : null, ticket_sem: s(sem, 'pedidos') ? recSem / s(sem, 'pedidos') : null }];
   },
 });
 dash.calc('cupons_dono', {
@@ -1056,7 +1057,7 @@ dash.calc('cupons_top', {
 
 /* ---------- Conversão e funil (Tannat) ---------- */
 const PLAT_NOME = { app: 'App', 'web-mobile': 'Site mobile', web: 'Site desktop' };
-const platNome = (r) => (r.plataforma === 'app' ? ({ ANDROID: 'App Android', IOS: 'App iOS' }[String(r.loja || '').toUpperCase()] || 'App (outros)') : PLAT_NOME[r.plataforma] || 'Outros');
+const platNome = (r) => { const p = String(r.plataforma || '').toLowerCase(), l = String(r.loja || '').toUpperCase(); if (p === 'android' || (p === 'app' && l === 'ANDROID')) return 'App Android'; if (p === 'ios' || (p === 'app' && l === 'IOS')) return 'App iOS'; if (p === 'app') return 'App (outros)'; return PLAT_NOME[p] || 'Outros'; };
 const PLAT_ORD = ['App Android', 'App iOS', 'App (outros)', 'Site mobile', 'Site desktop', 'Outros'];
 const funilTotais = (rows) => { const t = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 }; rows.forEach((r) => { Object.keys(t).forEach((k) => { t[k] += r[k] || 0; }); }); return t; };
 dash.calc('funil', {
@@ -1072,16 +1073,19 @@ dash.calc('funil', {
   },
 });
 dash.calc('funil_plataforma', {
-  title: 'Conversão por plataforma (Tannat)',
-  description: 'Por plataforma (app Android, app iOS, site mobile, site desktop) e total: sessões, share das sessões, % que viram produto, % que adicionaram ao carrinho, sessões com pedido, conversão (sessões com pedido ÷ sessões) e bounce (sessões com até 1 pageview ÷ sessões). A conversão de cada plataforma é colorida contra a conversão total.',
-  inputs: ['tannat_funil'],
-  fn: (tannat_funil) => {
-    const K = ['sessoes', 'pdp', 'carrinho', 'pedido', 'bounce'];
-    const P = {}, T = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 };
-    tannat_funil.forEach((r) => { const k = platNome(r); const o = P[k] || (P[k] = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 }); K.forEach((x) => { o[x] += r[x] || 0; T[x] += r[x] || 0; }); });
-    if (!T.sessoes) return [];
-    const convTot = T.pedido / T.sessoes;
-    const linha = (nome, o) => ({ plataforma: nome, sessoes: o.sessoes, share: o.sessoes / T.sessoes, pdp_pct: o.sessoes ? o.pdp / o.sessoes : null, carrinho_pct: o.sessoes ? o.carrinho / o.sessoes : null, pedidos: o.pedido, conversao: o.sessoes ? o.pedido / o.sessoes : null, conv_ref: convTot, bounce: o.sessoes ? o.bounce / o.sessoes : null });
+  title: 'Sessões, conversão e receita por plataforma',
+  description: 'Por plataforma (app Android, app iOS, site mobile, site desktop) e total. Sessões, share das sessões, conversão (sessões com pedido ÷ sessões) e bounce vêm da Tannat (Evino, sem bots). Receita (produto + frete), share da receita, pedidos e ticket vêm do Magento pela plataforma do pedido, no mesmo recorte da receita do dash (Hoje: boleto condition). A conversão de cada plataforma é colorida contra a conversão total.',
+  inputs: ['tannat_funil', 'receita_plataforma'],
+  fn: (tannat_funil, receita_plataforma) => {
+    const Z = () => ({ sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0, rec: 0, pedidos: 0 });
+    const P = {}, T = Z();
+    const add = (r, ks) => { const k = platNome(r); const o = P[k] || (P[k] = Z()); ks.forEach(([dst, src]) => { const v = typeof src === 'function' ? src(r) : r[src] || 0; o[dst] += v; T[dst] += v; }); };
+    tannat_funil.forEach((r) => add(r, [['sessoes', 'sessoes'], ['pdp', 'pdp'], ['carrinho', 'carrinho'], ['pedido', 'pedido'], ['bounce', 'bounce']]));
+    receita_plataforma.forEach((r) => add(r, [['rec', (x) => (x.rec || 0) + (x.frete || 0)], ['pedidos', 'pedidos']]));
+    if (!T.sessoes && !T.rec) return [];
+    const convTot = T.sessoes ? T.pedido / T.sessoes : null;
+    const linha = (nome, o) => ({ plataforma: nome, sessoes: o.sessoes, share: T.sessoes ? o.sessoes / T.sessoes : null, conversao: o.sessoes ? o.pedido / o.sessoes : null, conv_ref: convTot, bounce: o.sessoes ? o.bounce / o.sessoes : null,
+      receita: o.rec, share_receita: T.rec ? o.rec / T.rec : null, pedidos: o.pedidos, ticket: o.pedidos ? o.rec / o.pedidos : null });
     const rows = Object.keys(P).sort((a, b) => PLAT_ORD.indexOf(a) - PLAT_ORD.indexOf(b)).map((k) => linha(k, P[k]));
     return rows.concat(Object.assign(linha('Total', T), { canal: 'Total', conv_ref: null }));
   },
