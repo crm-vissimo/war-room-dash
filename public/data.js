@@ -1056,6 +1056,8 @@ dash.calc('cupons_top', {
 
 /* ---------- Conversão e funil (Tannat) ---------- */
 const PLAT_NOME = { app: 'App', 'web-mobile': 'Site mobile', web: 'Site desktop' };
+const platNome = (r) => (r.plataforma === 'app' ? ({ ANDROID: 'App Android', IOS: 'App iOS' }[String(r.loja || '').toUpperCase()] || 'App (outros)') : PLAT_NOME[r.plataforma] || 'Outros');
+const PLAT_ORD = ['App Android', 'App iOS', 'App (outros)', 'Site mobile', 'Site desktop', 'Outros'];
 const funilTotais = (rows) => { const t = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 }; rows.forEach((r) => { Object.keys(t).forEach((k) => { t[k] += r[k] || 0; }); }); return t; };
 dash.calc('funil', {
   title: 'Funil do site e do app (Tannat)',
@@ -1071,11 +1073,16 @@ dash.calc('funil', {
 });
 dash.calc('funil_plataforma', {
   title: 'Conversão por plataforma (Tannat)',
-  description: 'Por plataforma (app, site mobile, site desktop): sessões, share das sessões, conversão (sessões com pedido ÷ sessões), carrinho (sessões com carrinho ÷ sessões) e bounce (sessões com até 1 pageview ÷ sessões).',
+  description: 'Por plataforma (app Android, app iOS, site mobile, site desktop) e total: sessões, share das sessões, % que viram produto, % que adicionaram ao carrinho, sessões com pedido, conversão (sessões com pedido ÷ sessões) e bounce (sessões com até 1 pageview ÷ sessões). A conversão de cada plataforma é colorida contra a conversão total.',
   inputs: ['tannat_funil'],
   fn: (tannat_funil) => {
-    const tot = tannat_funil.reduce((a, r) => a + r.sessoes, 0);
-    const P = {}; tannat_funil.forEach((r) => { const k = PLAT_NOME[r.plataforma] || 'Outros'; const o = P[k] || (P[k] = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 }); ['sessoes', 'pdp', 'carrinho', 'pedido', 'bounce'].forEach((x) => { o[x] += r[x]; }); });
-    return Object.keys(P).map((k) => { const o = P[k]; return { plataforma: k, sessoes: o.sessoes, share: tot ? o.sessoes / tot : null, carrinho_pct: o.sessoes ? o.carrinho / o.sessoes : null, conversao: o.sessoes ? o.pedido / o.sessoes : null, bounce: o.sessoes ? o.bounce / o.sessoes : null, pedidos: o.pedido }; }).sort((a, b) => b.sessoes - a.sessoes);
+    const K = ['sessoes', 'pdp', 'carrinho', 'pedido', 'bounce'];
+    const P = {}, T = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 };
+    tannat_funil.forEach((r) => { const k = platNome(r); const o = P[k] || (P[k] = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 }); K.forEach((x) => { o[x] += r[x] || 0; T[x] += r[x] || 0; }); });
+    if (!T.sessoes) return [];
+    const convTot = T.pedido / T.sessoes;
+    const linha = (nome, o) => ({ plataforma: nome, sessoes: o.sessoes, share: o.sessoes / T.sessoes, pdp_pct: o.sessoes ? o.pdp / o.sessoes : null, carrinho_pct: o.sessoes ? o.carrinho / o.sessoes : null, pedidos: o.pedido, conversao: o.sessoes ? o.pedido / o.sessoes : null, conv_ref: convTot, bounce: o.sessoes ? o.bounce / o.sessoes : null });
+    const rows = Object.keys(P).sort((a, b) => PLAT_ORD.indexOf(a) - PLAT_ORD.indexOf(b)).map((k) => linha(k, P[k]));
+    return rows.concat(Object.assign(linha('Total', T), { canal: 'Total', conv_ref: null }));
   },
 });

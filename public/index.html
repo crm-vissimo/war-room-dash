@@ -78,22 +78,28 @@
 .wr .share-canais { min-height: 0; }
 .wr .chart.fino { min-height: 0; }
 /* cupons e funil */
-.wr .cup-strip { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: #7a4a46; }
-.wr .cup-strip b { color: var(--ev-dark); font-weight: 700; }
+.wr .card > .tiles.cup-kpis { margin: 2px 0 14px; }
 .wr .stk { display: flex; height: 34px; border-radius: 8px; overflow: hidden; gap: 2px; background: #fff; }
 .wr .stk span { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; min-width: 0; overflow: hidden; white-space: nowrap; }
-.wr .funil-wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-@media (max-width: 900px) { .wr .funil-wrap { grid-template-columns: 1fr; } }
-.wr .funil { display: grid; gap: 8px; }
-.wr .funil-conv { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.wr .funil-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 22px; align-items: start; }
+@media (max-width: 980px) { .wr .funil-wrap { grid-template-columns: 1fr; } }
+.wr .funil { display: grid; gap: 14px; }
+.wr .funil svg { display: block; max-width: 480px; overflow: visible; }
+.wr .funil-conv { display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; background: var(--ev-cream); border-radius: 14px; padding: 10px 14px; }
 .wr .funil-conv .lb { font-family: var(--f-ret); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; font-size: 13px; color: var(--ev-wine); }
-.wr .funil-conv b { font-family: var(--f-title); font-size: 30px; color: var(--ev-dark); }
+.wr .funil-conv b { font-family: var(--f-title); font-size: 32px; line-height: 1; color: var(--ev-dark); }
 .wr .funil-conv .s { font-size: 13px; color: #7a4a46; }
-.wr .f-row { display: grid; grid-template-columns: 11rem 1fr; grid-template-rows: auto auto; column-gap: 10px; }
-.wr .f-nm { grid-row: 1 / span 2; align-self: center; font-size: 13px; font-weight: 600; color: var(--ev-dark); }
-.wr .f-tr { height: 18px; background: var(--ev-cream); border-radius: 6px; overflow: hidden; }
-.wr .f-bar { display: block; height: 100%; background: var(--ev-red); border-radius: 6px; }
-.wr .f-v { font-size: 12px; color: #7a4a46; }
+.wr .funil-conv .pp { font-weight: 700; }
+.wr .funil-conv .pp.up { color: var(--ev-good); }
+.wr .funil-conv .pp.down { color: var(--ev-red); }
+.wr .fn-tz { fill: var(--ev-red); }
+.wr .fn-ld { stroke: var(--ev-line, #e8cfc8); stroke-dasharray: 2 3; }
+.wr .fn-lb { font-family: var(--f-ret); font-weight: 700; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; fill: var(--ev-wine); }
+.wr .fn-v { font-family: var(--f-title); font-size: 22px; fill: var(--ev-dark); }
+.wr .fn-s { font-size: 12px; fill: #7a4a46; }
+.wr .fn-pill { fill: #fff; stroke: var(--ev-red); stroke-width: 1; }
+.wr .fn-pt { font-size: 12px; font-weight: 700; fill: var(--ev-dark); }
+.wr .fn-tab td:first-child { white-space: nowrap; font-weight: 600; }
 /* Hoje: o card do mês até agora fica abaixo do atingimento do dia, na mesma coluna e mais discreto (fundo claro, número menor) */
 /* Hoje: atingimento do dia e do mês num bloco só, da altura do gráfico ao lado: o do dia em cima (ocupa o espaço que
    sobra) e o do mês numa faixa clara e fina embaixo, colada nele */
@@ -399,11 +405,11 @@ td .tp.vid { background: var(--ev-orange); }
     <div class="card" id="cupons">
       <h3>Cupons e regras de desconto</h3>
       <p class="cap">Regras de desconto do Magento usadas nos pedidos do período (mesmo recorte da receita; em Hoje, boleto condition). Desconto médio = desconto ÷ (receita sem frete + desconto). Dono = prefixo do nome da regra ([POC], [CRM], [PAR], [EXT]…).</p>
-      <div class="cup-strip">
-        <span><b data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="share_com" data-fmt="pct">—</b> da receita com cupom</span>
-        <span>receita com cupom <b data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="receita_com" data-fmt="brl">—</b></span>
-        <span>desconto concedido <b data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="desconto" data-fmt="brl">—</b> (<b data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="desconto_pct" data-fmt="pct">—</b> em média)</span>
-        <span>CM2 com cupom <b data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="cm2_com" data-fmt="cm2">—</b> · sem <b data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="cm2_sem" data-fmt="cm2">—</b></span>
+      <div class="tiles cup-kpis">
+        <div class="tile"><span class="lb">Receita com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="share_com" data-fmt="pct">—</span><span class="s"><span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="receita_com" data-fmt="brl">—</span> da receita do período</span></div>
+        <div class="tile"><span class="lb">Desconto concedido</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="desconto" data-fmt="brl">—</span><span class="s">desconto médio de <span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="desconto_pct" data-fmt="pct">—</span></span></div>
+        <div class="tile"><span class="lb">CM2 com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="cm2_com" data-fmt="cm2">—</span><span class="s">sem cupom: <span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="cm2_sem" data-fmt="cm2">—</span></span></div>
+        <div class="tile"><span class="lb">Pedidos com cupom</span><span class="v" data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="pedidos_com" data-fmt="int">—</span><span class="s"><span data-draw="kv" data-source="cupons_resumo" data-row="0" data-field="regras" data-fmt="int">—</span> regras usadas</span></div>
       </div>
       <div class="chart share-canais" data-draw="ch_cupons_dono" data-source="cupons_dono"></div>
       <div class="tw"><table class="nm-full" data-source="cupons_top" data-row-key="regra">
@@ -416,8 +422,8 @@ td .tp.vid { background: var(--ev-orange); }
       <p class="cap">Sessões Evino sem bots na Tannat. Conversão = sessões com pedido ÷ sessões; cada etapa mostra o % das sessões e o % da etapa anterior. A etapa de checkout fica de fora: na Tannat ela não é contada por sessão. Os pedidos aqui são os que a Tannat registra na sessão, não os pedidos pagos do Magento.</p>
       <div class="funil-wrap">
         <div class="funil" data-draw="funil" data-source="funil"></div>
-        <div class="tw"><table data-source="funil_plataforma" data-row-key="plataforma">
-          <thead><tr><th tabindex="0" data-field="plataforma">Plataforma<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="sessoes" aria-sort="descending" data-fmt="int">Sessões</th><th tabindex="0" data-field="share" data-fmt="pct">Share</th><th tabindex="0" data-field="carrinho_pct" data-fmt="pct">Carrinho</th><th tabindex="0" data-field="conversao" data-fmt="pct2">Conversão</th><th tabindex="0" data-field="bounce" data-fmt="pct">Bounce</th></tr></thead>
+        <div class="tw"><table class="fn-tab" data-source="funil_plataforma" data-row-key="plataforma">
+          <thead><tr><th tabindex="0" data-field="plataforma">Plataforma<span class="rz" aria-hidden="true"></span></th><th tabindex="0" data-field="sessoes" aria-sort="descending" data-fmt="int">Sessões</th><th tabindex="0" data-field="share" data-fmt="pct">Share</th><th tabindex="0" data-field="pdp_pct" data-fmt="pct">Viram produto</th><th tabindex="0" data-field="carrinho_pct" data-fmt="pct">Carrinho</th><th tabindex="0" data-field="pedidos" data-fmt="int">Pedidos</th><th tabindex="0" data-field="conversao" data-fmt="conv">Conversão</th><th tabindex="0" data-field="bounce" data-fmt="pct">Bounce</th></tr></thead>
           <tbody data-draw="tbl"></tbody></table></div>
       </div>
     </div>
@@ -724,6 +730,7 @@ window.WR = (function () {
     dias: (v) => (ok(v) ? (v >= 99 ? '99+ dias' : nf0.format(v) + ' dias') : '—'),
     brl2cac: (v) => (ok(v) ? 'R$ ' + nf2.format(v) : '—'),
     alerta: (v) => (v == null ? '—' : String(v)),
+    conv: (v) => (ok(v) ? nf2.format(v * 100) + '%' : '—'),
   };
   const CLS = {
     delta: (v) => (!ok(v) || Math.abs(v) < 0.005 ? 'flat' : v > 0 ? 'up' : 'down'),
@@ -732,6 +739,8 @@ window.WR = (function () {
     atg: (v) => (!ok(v) ? '' : v >= 1 ? 'up' : v >= 0.9 ? 'warn' : 'down'),
     /* atingimento do investimento: gastar até o plano é bom; até 10% acima, atenção; mais que isso, estourou */
     atginv: (v) => (!ok(v) ? '' : v <= 1 ? 'up' : v <= 1.1 ? 'warn' : 'down'),
+    /* conversão por plataforma: contra a conversão total (10% acima é verde, 10% abaixo é vermelho) */
+    conv: (v, r) => { const ref = r && r.conv_ref; if (!ok(v) || !ok(ref) || !ref) return ''; return v >= ref * 1.1 ? 'up' : v <= ref * 0.9 ? 'down' : 'flat'; },
     alerta: (v) => (v === 'Crítico' || v === 'Esgotado' ? 'down' : v === 'Atenção' ? 'warn' : v === 'OK' ? 'up' : ''),
     /* ROAS: contra a referência da linha (ROAS planejado do canal, ou ROAS last click do Facebook no período para anúncios) */
     x: (v, r) => { if (r && (r.canal === 'Facebook' || r.anuncio != null)) { if (!ok(v)) return ''; return v > 3.7 ? 'up' : v >= 3 ? 'warn' : 'down'; } const ref = r && (r.roas_ref != null ? r.roas_ref : r.roas_plan); if (!ok(v) || !ok(ref) || !ref) return ''; return v >= ref ? 'up' : v >= ref * 0.8 ? 'warn' : 'down'; },
@@ -1175,7 +1184,7 @@ dash.draw('ch_cupons_dono', (el) => {
   d.data.forEach((r) => { const li = document.createElement('li'); li.innerHTML = '<span class="sw"></span>'; li.firstChild.style.background = COR[r.dono] || '#b9a19b'; li.append(r.nome + ' '); const b = document.createElement('b'); b.textContent = WR.F.pct(r.share); li.appendChild(b); lg.appendChild(li); });
   el.append(bar, lg);
 });
-/* Funil: barras horizontais proporcionais às sessões de cada etapa */
+/* Funil: trapézios centralizados; a largura segue a raiz do % das sessões para as etapas finais continuarem legíveis */
 dash.draw('funil', (el) => {
   const d = dash.data('funil');
   el.replaceChildren();
@@ -1184,19 +1193,34 @@ dash.draw('funil', (el) => {
   const head = document.createElement('div'); head.className = 'funil-conv';
   head.innerHTML = '<span class="lb">Conversão</span><b></b><span class="s"></span>';
   head.querySelector('b').textContent = WR.F.pct2(r0.conversao);
-  head.querySelector('.s').textContent = (dia && r0.var_conversao_pp != null ? (r0.var_conversao_pp >= 0 ? '+' : '−') + WR.F.pct2(Math.abs(r0.var_conversao_pp)).replace('%', ' p.p.') + ' vs mês · ' : '') + 'bounce ' + WR.F.pct(r0.bounce);
-  if (dia && r0.var_conversao_pp != null) head.querySelector('.s').classList.add(r0.var_conversao_pp >= 0 ? 'up' : 'down');
+  const s = head.querySelector('.s');
+  if (dia && r0.var_conversao_pp != null) {
+    const pp = document.createElement('span'); pp.className = 'pp ' + (r0.var_conversao_pp >= 0 ? 'up' : 'down');
+    pp.textContent = (r0.var_conversao_pp >= 0 ? '▲ +' : '▼ −') + WR.F.pct2(Math.abs(r0.var_conversao_pp)).replace('%', ' p.p.');
+    s.append(pp, ' vs média do mês (' + WR.F.pct2(r0.conversao_mes) + ') · ');
+  }
+  s.append('bounce ' + WR.F.pct(r0.bounce));
   el.appendChild(head);
+  const NS = 'http://www.w3.org/2000/svg', W = 430, FW = 220, RH = 60, n = d.data.length, H = n * RH;
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('width', '100%'); svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Funil: ' + d.data.map((r) => r.etapa + ' ' + WR.F.int(r.sessoes)).join(', '));
+  const mk = (tag, at, txt) => { const e = document.createElementNS(NS, tag); Object.keys(at).forEach((k) => e.setAttribute(k, at[k])); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; };
+  const wid = (r) => FW * Math.max(0.2, Math.sqrt(Math.max(0, r.pct_total || 0)));
+  const OP = [1, 0.8, 0.62, 0.46];
   d.data.forEach((r, i) => {
-    const row = document.createElement('div'); row.className = 'f-row';
-    const nm = document.createElement('span'); nm.className = 'f-nm'; nm.textContent = r.etapa;
-    const tr = document.createElement('span'); tr.className = 'f-tr';
-    const b = document.createElement('span'); b.className = 'f-bar'; b.style.width = Math.max(1.5, (r.pct_total || 0) * 100) + '%'; b.style.opacity = String(1 - i * 0.16);
-    tr.appendChild(b);
-    const v = document.createElement('span'); v.className = 'f-v';
-    v.textContent = WR.F.int(r.sessoes) + (i ? ' · ' + WR.F.pct(r.pct_total) + ' das sessões · ' + WR.F.pct(r.pct_anterior) + ' da etapa anterior' : '');
-    row.append(nm, tr, v); el.appendChild(row);
+    const y = i * RH, w1 = wid(r), w2 = i < n - 1 ? wid(d.data[i + 1]) : w1 * 0.82, c = FW / 2;
+    mk('path', { d: 'M' + (c - w1 / 2) + ',' + y + ' L' + (c + w1 / 2) + ',' + y + ' L' + (c + w2 / 2) + ',' + (y + RH - 3) + ' L' + (c - w2 / 2) + ',' + (y + RH - 3) + ' Z', class: 'fn-tz', 'fill-opacity': OP[i] || 0.4 });
+    mk('line', { x1: c + w1 / 2 + 6, x2: FW + 10, y1: y + RH / 2, y2: y + RH / 2, class: 'fn-ld' });
+    mk('text', { x: FW + 18, y: y + 17, class: 'fn-lb' }, r.etapa);
+    mk('text', { x: FW + 18, y: y + 39, class: 'fn-v' }, WR.F.int(r.sessoes));
+    if (i) mk('text', { x: FW + 18, y: y + 55, class: 'fn-s' }, WR.F.pct(r.pct_total) + ' das sessões');
+    if (i) {
+      const t = WR.F.pct(r.pct_anterior), pw = 22 + t.length * 7.2;
+      mk('rect', { x: c - pw / 2, y: y - 11, width: pw, height: 22, rx: 11, class: 'fn-pill' });
+      mk('text', { x: c, y: y + 4, class: 'fn-pt', 'text-anchor': 'middle' }, '↓ ' + t);
+    }
   });
+  el.appendChild(svg);
 });
 dash.draw('faixa_nota', (el) => {
   const d = dash.data('faixas');
