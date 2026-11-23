@@ -1009,3 +1009,73 @@ dash.calc('kits_grupo', {
     return out;
   },
 });
+
+/* ---------- Cupons e regras de desconto ---------- */
+/* dono da regra = prefixo entre colchetes do nome no Magento ([POC], [CRM], [PAR]…); sem regra = "Sem cupom" */
+const donoRegra = (r) => { if (!r) return 'Sem cupom'; const m = /^\s*\[([A-Za-z]+)\]/.exec(r); return m ? m[1].toUpperCase() : 'Outros'; };
+const DONO_NOME = { POC: 'POC (Promo/Comercial)', CRM: 'CRM', PAR: 'Parcerias', EXT: 'Influenciadores/Externo', SAC: 'SAC', BRD: 'Branding', 'Sem cupom': 'Sem cupom', Outros: 'Outros' };
+dash.calc('cupons_resumo', {
+  title: 'Cupons no período',
+  description: 'Receita (produto + frete) com e sem regra de desconto, share da receita com cupom, desconto concedido (discount_amount) e desconto médio = desconto ÷ (receita sem frete + desconto) nos pedidos com cupom, CM2 % com e sem cupom e quantas regras foram usadas. Mesmo recorte de pedidos da receita (Hoje: boleto condition).',
+  inputs: ['cupons'],
+  fn: (cupons) => {
+    if (!cupons.length) return [];
+    const com = cupons.filter((r) => r.regra), sem = cupons.filter((r) => !r.regra);
+    const s = (rows, k) => rows.reduce((a, r) => a + r[k], 0);
+    const recCom = s(com, 'rec') + s(com, 'frete'), recSem = s(sem, 'rec') + s(sem, 'frete'), tot = recCom + recSem;
+    const desc = s(com, 'desconto');
+    return [{ receita_com: recCom, receita_sem: recSem, share_com: tot ? recCom / tot : null, desconto: desc, desconto_pct: s(com, 'rec') + desc ? desc / (s(com, 'rec') + desc) : null,
+      cm2_com: recCom ? s(com, 'cm2') / recCom : null, cm2_sem: recSem ? s(sem, 'cm2') / recSem : null, pedidos_com: s(com, 'pedidos'), regras: com.length }];
+  },
+});
+dash.calc('cupons_dono', {
+  title: 'Receita por dono da regra de desconto',
+  description: 'Share da receita (produto + frete) por dono da regra, pelo prefixo do nome no Magento ([POC], [CRM], [PAR], [EXT], [SAC], [BRD]); pedidos sem regra = Sem cupom.',
+  inputs: ['cupons'],
+  fn: (cupons) => {
+    const D = {}; cupons.forEach((r) => { const d = donoRegra(r.regra); const o = D[d] || (D[d] = { receita: 0, desconto: 0, pedidos: 0 }); o.receita += r.rec + r.frete; o.desconto += r.desconto; o.pedidos += r.pedidos; });
+    const tot = Object.values(D).reduce((a, o) => a + o.receita, 0);
+    if (!tot) return [];
+    const ORD = ['Sem cupom', 'POC', 'CRM', 'PAR', 'EXT', 'SAC', 'BRD', 'Outros'];
+    return Object.keys(D).sort((a, b) => (ORD.indexOf(a) < 0 ? 99 : ORD.indexOf(a)) - (ORD.indexOf(b) < 0 ? 99 : ORD.indexOf(b))).map((d) => ({ dono: d, nome: DONO_NOME[d] || d, receita: D[d].receita, share: D[d].receita / tot, desconto: D[d].desconto, pedidos: D[d].pedidos }));
+  },
+});
+dash.calc('cupons_top', {
+  title: 'Top 10 regras de desconto',
+  description: 'As 10 regras de desconto com mais receita (produto + frete) no período: dono, código mais usado (ou quantos códigos únicos), pedidos, receita, share da receita total, desconto médio = desconto ÷ (receita sem frete + desconto), CM2 % e ticket.',
+  inputs: ['cupons'],
+  fn: (cupons) => {
+    const tot = cupons.reduce((a, r) => a + r.rec + r.frete, 0);
+    return cupons.filter((r) => r.regra).map((r) => {
+      const rf = r.rec + r.frete;
+      return { regra: r.regra.replace(/^\s*\[[A-Za-z]+\]\s*/, ''), dono: donoRegra(r.regra), codigo: r.codigos > 3 ? r.codigos + ' códigos' : r.codigo_top, pedidos: r.pedidos, receita: rf, share: tot ? rf / tot : null,
+        desconto_pct: r.rec + r.desconto ? r.desconto / (r.rec + r.desconto) : null, cm2_pct: rf ? r.cm2 / rf : null, ticket: r.pedidos ? rf / r.pedidos : null };
+    }).sort((a, b) => b.receita - a.receita).slice(0, 10);
+  },
+});
+
+/* ---------- Conversão e funil (Tannat) ---------- */
+const PLAT_NOME = { app: 'App', 'web-mobile': 'Site mobile', web: 'Site desktop' };
+const funilTotais = (rows) => { const t = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 }; rows.forEach((r) => { Object.keys(t).forEach((k) => { t[k] += r[k] || 0; }); }); return t; };
+dash.calc('funil', {
+  title: 'Funil do site e do app (Tannat)',
+  description: 'Sessões Evino sem bots (Tannat, vw_tannat_sessao_dia_v2) no período: sessões, que viram produto (PDP), que adicionaram ao carrinho e com pedido; taxa de cada etapa sobre as sessões e sobre a etapa anterior. Conversão = sessões com pedido ÷ sessões. Em Hoje e Ontem, a conversão também contra o mês até ontem.',
+  inputs: ['tannat_funil', 'tannat_funil_mes'],
+  fn: (tannat_funil, tannat_funil_mes) => {
+    if (!tannat_funil.length) return [];
+    const t = funilTotais(tannat_funil), m = funilTotais(tannat_funil_mes);
+    const conv = t.sessoes ? t.pedido / t.sessoes : null, convMes = m.sessoes ? m.pedido / m.sessoes : null;
+    const passos = [['Sessões', t.sessoes], ['Viram produto', t.pdp], ['Adicionaram ao carrinho', t.carrinho], ['Fizeram pedido', t.pedido]];
+    return passos.map(([etapa, n], i) => ({ etapa, sessoes: n, pct_total: t.sessoes ? n / t.sessoes : null, pct_anterior: i && passos[i - 1][1] ? n / passos[i - 1][1] : null, conversao: conv, conversao_mes: convMes, var_conversao_pp: conv != null && convMes != null ? conv - convMes : null, bounce: t.sessoes ? t.bounce / t.sessoes : null }));
+  },
+});
+dash.calc('funil_plataforma', {
+  title: 'Conversão por plataforma (Tannat)',
+  description: 'Por plataforma (app, site mobile, site desktop): sessões, share das sessões, conversão (sessões com pedido ÷ sessões), carrinho (sessões com carrinho ÷ sessões) e bounce (sessões com até 1 pageview ÷ sessões).',
+  inputs: ['tannat_funil'],
+  fn: (tannat_funil) => {
+    const tot = tannat_funil.reduce((a, r) => a + r.sessoes, 0);
+    const P = {}; tannat_funil.forEach((r) => { const k = PLAT_NOME[r.plataforma] || 'Outros'; const o = P[k] || (P[k] = { sessoes: 0, pdp: 0, carrinho: 0, pedido: 0, bounce: 0 }); ['sessoes', 'pdp', 'carrinho', 'pedido', 'bounce'].forEach((x) => { o[x] += r[x]; }); });
+    return Object.keys(P).map((k) => { const o = P[k]; return { plataforma: k, sessoes: o.sessoes, share: tot ? o.sessoes / tot : null, carrinho_pct: o.sessoes ? o.carrinho / o.sessoes : null, conversao: o.sessoes ? o.pedido / o.sessoes : null, bounce: o.sessoes ? o.bounce / o.sessoes : null, pedidos: o.pedido }; }).sort((a, b) => b.sessoes - a.sessoes);
+  },
+});
